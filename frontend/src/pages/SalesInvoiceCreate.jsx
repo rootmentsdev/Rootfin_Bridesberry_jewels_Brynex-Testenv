@@ -3216,7 +3216,6 @@ Customer Service Available`;
                             className="w-full h-[42px] appearance-none rounded-none border border-[#E5E7EB] bg-white px-3.5 pr-8 text-sm text-[#111827] focus:border-[#8B5CF6] focus:outline-none transition-colors cursor-pointer"
                           >
                             <option value="Warehouse">Warehouse</option>
-                            <option value="SuitorGuy MG Road">MG Road</option>
                           </select>
                           <ChevronDown
                             size={16}

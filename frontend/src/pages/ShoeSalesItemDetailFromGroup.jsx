@@ -98,10 +98,10 @@ const WAREHOUSE_NAME_MAPPING = {
   "Vadakara Branch": "Vadakara Branch"
 };
 
-// Display names for the Stocks page (what users see) - includes Warehouse, MG Road, and all active stores
+// Display names for the Stocks page (what users see) - restricted to active stores
 const getAllowedWarehousesDisplay = () => {
   const stores = getActiveStores();
-  return stores && stores.length > 0 ? stores.map(s => s.locName) : ["Warehouse", "MG Road"];
+  return stores && stores.length > 0 ? stores.map(s => s.locName) : ["Warehouse"];
 };
 
 // Get all possible actual warehouse names that map to allowed warehouses

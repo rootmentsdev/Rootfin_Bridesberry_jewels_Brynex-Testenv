@@ -5,14 +5,13 @@ import mongoose from "mongoose";
 // Fallback guaranteed active stores
 export const fallbackStores = [
   { name: "Warehouse", locCode: "858", locName: "Warehouse", isActive: true },
-  { name: "MG Road", locCode: "718", locName: "MG Road", isActive: true },
 ];
 
 // Decommissioned old branch locCodes that must remain excluded
 export const DISCARDED_LOC_CODES = new Set([
   "700", "701", "702", "703", "704", "705", "706", "707", "708", "709",
-  "710", "711", "712", "716", "717", "759", "100", "101", "102", "122",
-  "133", "144", "555"
+  "710", "711", "712", "716", "717", "718", "759", "100", "101", "102", "122",
+  "133", "144", "555", "031", "222", "800", "15623"
 ]);
 
 export const DISCARDED_NAME_PATTERNS = [
@@ -32,7 +31,9 @@ export const DISCARDED_NAME_PATTERNS = [
   "g-kalpetta", "g.kalpetta", "kalpetta",
   "g-kannur", "g.kannur", "kannur",
   "production", "office", "head office", "dappr squad",
-  "z-edapally", "z-edappal", "z-perinthalmanna", "z-kottakkal"
+  "z-edapally", "z-edappal", "z-perinthalmanna", "z-kottakkal",
+  "suitorguy mg road", "mg road", "mgroad",
+  "brides berry", "brides berry ", "test store tranfer"
 ];
 
 export const isAllowedStore = (store) => {
@@ -40,12 +41,12 @@ export const isAllowedStore = (store) => {
   const code = (store.locCode || "").toString().trim();
   const name = (store.name || store.locName || "").toLowerCase().trim();
 
-  // 1. Always keep Warehouse and MG Road
-  if (code === "858" || code === "103" || code === "718" || name.includes("warehouse") || name.includes("mg road") || name.includes("mgroad")) {
+  // 1. Always keep Warehouse
+  if (code === "858" || code === "103" || name.includes("warehouse")) {
     return true;
   }
 
-  // 2. Block decommissioned old branches
+  // 2. Block decommissioned old branches, MG Road, and non-warehouse stores
   if (DISCARDED_LOC_CODES.has(code)) {
     return false;
   }

@@ -51,9 +51,25 @@ const Header = (prop) => {
         try {
             const storedUser = JSON.parse(localStorage.getItem("rootfinuser"));
             if (storedUser) {
-                const locationName = locations.find(loc => loc.locCode === storedUser.locCode)?.locName || storedUser.username;
-                setCurrentUser({ ...storedUser, username: locationName });
-                setSelectedValue(storedUser.locCode);
+                const foundLoc = locations.find(loc => loc.locCode === storedUser.locCode);
+                const activeLoc = foundLoc || locations[0];
+                if (activeLoc) {
+                    const updatedUser = {
+                        ...storedUser,
+                        locCode: activeLoc.locCode,
+                        username: activeLoc.locName
+                    };
+                    if (!foundLoc && locations.length > 0) {
+                        try {
+                            localStorage.setItem("rootfinuser", JSON.stringify(updatedUser));
+                        } catch (e) {}
+                    }
+                    setCurrentUser(updatedUser);
+                    setSelectedValue(activeLoc.locCode);
+                } else {
+                    setCurrentUser(storedUser);
+                    setSelectedValue(storedUser.locCode);
+                }
             }
         } catch (error) {
             console.error("Error syncing user from storage:", error);

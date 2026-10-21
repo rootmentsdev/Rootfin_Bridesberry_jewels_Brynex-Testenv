@@ -555,8 +555,7 @@ export const updatePurchaseOrder = async (req, res) => {
         targetWarehouse = "Warehouse";
       } else {
         const fallbackLocations = [
-          { "locName": "Warehouse", "locCode": "858" },
-          { "locName": "MG Road", "locCode": "718" }
+          { "locName": "Warehouse", "locCode": "858" }
         ];
 
         const userLocCode = orderData.locCode || purchaseOrder.locCode || "";

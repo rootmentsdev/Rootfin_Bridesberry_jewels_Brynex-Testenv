@@ -1027,8 +1027,7 @@ export const createBill = async (req, res) => {
         } else if (!warehouseName) {
           // If warehouse not provided and not admin, determine from locCode
           const fallbackLocations = [
-            { "locName": "Warehouse", "locCode": "858" },
-            { "locName": "MG Road", "locCode": "718" }
+            { "locName": "Warehouse", "locCode": "858" }
           ];
           
           const userLocCode = billData.locCode || "";
@@ -1299,8 +1298,7 @@ export const updateBill = async (req, res) => {
     } else if (!warehouseName) {
       // If warehouse not provided and not admin, determine from locCode
        const fallbackLocations = [
-        { "locName": "Warehouse", "locCode": "858" },
-        { "locName": "MG Road", "locCode": "718" }
+        { "locName": "Warehouse", "locCode": "858" }
       ];
       
       const userLocCode = billData.locCode || existingBill.locCode || "";

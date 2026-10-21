@@ -802,8 +802,7 @@ export const createPurchaseReceive = async (req, res) => {
     } else {
       // For other users, determine warehouse from locCode
        const fallbackLocations = [
-        { "locName": "Warehouse", "locCode": "858" },
-        { "locName": "MG Road", "locCode": "718" }
+        { "locName": "Warehouse", "locCode": "858" }
       ];
       
       const userLocCode = receiveData.locCode || "";
@@ -1541,8 +1540,7 @@ export const sendPurchaseReceive = async (req, res) => {
       console.log(`📍 Admin email detected (${userId}), using warehouse: "Warehouse" (ignoring locCode)`);
     } else {
        const fallbackLocations = [
-        { "locName": "Warehouse", "locCode": "858" },
-        { "locName": "MG Road", "locCode": "718" }
+        { "locName": "Warehouse", "locCode": "858" }
       ];
 
       const userLocCode = purchaseReceive.locCode || "";

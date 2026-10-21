@@ -114,10 +114,9 @@ const WAREHOUSE_NAME_MAPPING = {
   "Vadakara Branch": "Vadakara Branch"
 };
 
-// Display names for the Stocks page (what users see) - restricted to Warehouse and MG Road
+// Display names for the Stocks page (what users see) - restricted to Warehouse only
 const ALLOWED_WAREHOUSES_DISPLAY = [
-  "Warehouse",
-  "MG Road"
+  "Warehouse"
 ];
 
 // Helper function to normalize warehouse name to display name

@@ -3,13 +3,12 @@ import baseUrl from "../api/api";
 
 export const FALLBACK_STORES = [
   { locName: "Warehouse", locCode: "858", name: "Warehouse", label: "Warehouse", value: "858" },
-  { locName: "MG Road", locCode: "718", name: "MG Road", label: "MG Road", value: "718" },
 ];
 
 export const DISCARDED_LOC_CODES = new Set([
   "700", "701", "702", "703", "704", "705", "706", "707", "708", "709",
-  "710", "711", "712", "716", "717", "759", "100", "101", "102", "122",
-  "133", "144", "555"
+  "710", "711", "712", "716", "717", "718", "759", "100", "101", "102", "122",
+  "133", "144", "555", "031", "222", "800", "15623"
 ]);
 
 export const DISCARDED_NAME_PATTERNS = [
@@ -29,19 +28,26 @@ export const DISCARDED_NAME_PATTERNS = [
   "g-kalpetta", "g.kalpetta", "kalpetta",
   "g-kannur", "g.kannur", "kannur",
   "production", "office", "head office", "dappr squad",
-  "z-edapally", "z-edappal", "z-perinthalmanna", "z-kottakkal"
+  "z-edapally", "z-edappal", "z-perinthalmanna", "z-kottakkal",
+  "suitorguy mg road", "mg road", "mgroad",
+  "brides berry", "brides berry ", "test store tranfer"
 ];
 
-export const isAllowedStoreNameOrCode = (locCode, locName) => {
+export const isAllowedStoreNameOrCode = (locCode, locName, isCustom = false) => {
   const code = (locCode || "").toString().trim();
   const name = (locName || "").toLowerCase().trim();
 
-  // Always allow Warehouse and MG Road
-  if (code === "858" || code === "103" || code === "718" || name.includes("warehouse") || name.includes("mg road") || name.includes("mgroad")) {
+  // Explicit user-added store (e.g. from Add New Store): always allow!
+  if (isCustom && code && name) {
     return true;
   }
 
-  // Block decommissioned old branches
+  // Always allow Warehouse
+  if (code === "858" || code === "103" || name.includes("warehouse")) {
+    return true;
+  }
+
+  // Block decommissioned old branches, old MG Road (718), and old test stores
   if (DISCARDED_LOC_CODES.has(code)) {
     return false;
   }
@@ -49,8 +55,7 @@ export const isAllowedStoreNameOrCode = (locCode, locName) => {
     name === pat || 
     name === `g.${pat}` || 
     name === `g-${pat}` || 
-    name === `sg-${pat}` ||
-    name === `z-${pat}`
+    name === `sg-${pat}`
   )) {
     return false;
   }
@@ -117,7 +122,7 @@ export const saveCustomStore = (store) => {
 export const getActiveStores = () => {
   const storeMap = new Map();
 
-  // 1. Always start with Warehouse and MG Road
+  // 1. Always start with Warehouse
   FALLBACK_STORES.forEach(s => {
     storeMap.set(s.locCode, {
       ...s,
@@ -126,17 +131,18 @@ export const getActiveStores = () => {
     });
   });
 
-  // 2. Add custom stores saved by the user
+  // 2. Add custom stores saved by the user (only if allowed)
   try {
     const rawCustom = localStorage.getItem("rootfin_custom_stores");
     if (rawCustom) {
       const parsedCustom = JSON.parse(rawCustom);
       if (Array.isArray(parsedCustom)) {
+        const validCustom = [];
         parsedCustom.forEach(s => {
           const code = (s.locCode || "").toString().trim();
           const name = (s.locName || s.name || code).trim();
-          if (code && isAllowedStoreNameOrCode(code, name)) {
-            storeMap.set(code, {
+          if (code && isAllowedStoreNameOrCode(code, name, true)) {
+            const entry = {
               locName: name,
               locCode: code,
               name: name,
@@ -145,16 +151,19 @@ export const getActiveStores = () => {
               address: s.address || "",
               phone: s.phone || "",
               email: s.email || ""
-            });
+            };
+            storeMap.set(code, entry);
+            validCustom.push(entry);
           }
         });
+        localStorage.setItem("rootfin_custom_stores", JSON.stringify(validCustom));
       }
     }
   } catch (e) {
     console.warn("Could not read custom stores:", e);
   }
 
-  // 3. Add cached active stores
+  // 3. Add cached active stores (only if allowed)
   try {
     const cached = localStorage.getItem("rootfin_active_stores");
     if (cached) {
@@ -184,7 +193,13 @@ export const getActiveStores = () => {
     console.warn("Could not read cached active stores:", e);
   }
 
-  return Array.from(storeMap.values()).sort((a, b) => a.locName.localeCompare(b.locName));
+  const result = Array.from(storeMap.values()).sort((a, b) => a.locName.localeCompare(b.locName));
+  try {
+    localStorage.setItem("rootfin_active_stores", JSON.stringify(result));
+  } catch (e) {
+    // Ignore storage quota errors
+  }
+  return result;
 };
 
 export const fetchActiveStores = async () => {
@@ -210,7 +225,7 @@ export const fetchActiveStores = async () => {
         parsedCustom.forEach(s => {
           const code = (s.locCode || "").toString().trim();
           const name = (s.locName || s.name || code).trim();
-          if (code && isAllowedStoreNameOrCode(code, name)) {
+          if (code && isAllowedStoreNameOrCode(code, name, true)) {
             storeMap.set(code, {
               locName: name,
               locCode: code,
@@ -235,7 +250,7 @@ export const fetchActiveStores = async () => {
     rawName = (rawName || "").trim();
     if (!code || !rawName) return;
 
-    // Normalizations for Warehouse & MG Road
+    // Normalizations for Warehouse
     if (code === "858" || rawName.toLowerCase().includes("warehouse")) {
       storeMap.set("858", {
         locName: "Warehouse",
@@ -243,20 +258,6 @@ export const fetchActiveStores = async () => {
         name: "Warehouse",
         label: "Warehouse",
         value: "858",
-        address: extra.address || "",
-        phone: extra.phone || "",
-        email: extra.email || ""
-      });
-      return;
-    }
-
-    if (code === "718" || rawName.toLowerCase().replace(/\s+/g, "") === "mgroad" || rawName.toLowerCase() === "mg road") {
-      storeMap.set("718", {
-        locName: "MG Road",
-        locCode: "718",
-        name: "MG Road",
-        label: "MG Road",
-        value: "718",
         address: extra.address || "",
         phone: extra.phone || "",
         email: extra.email || ""
