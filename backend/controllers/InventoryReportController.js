@@ -5,6 +5,9 @@ import TransferOrder from "../model/TransferOrder.js";
 import PurchaseReceive from "../model/PurchaseReceive.js";
 import InventoryAdjustment from "../model/InventoryAdjustment.js";
 import Bill from "../model/Bill.js";
+import Store from "../model/Store.js";
+import User from "../model/UserModel.js";
+import { isAllowedStore, DISCARDED_NAME_PATTERNS } from "./StoreController.js";
 
 // Helper function to get inventory adjustments from MongoDB
 const getInventoryAdjustments = async (conditions) => {
@@ -30,15 +33,24 @@ const getInventoryAdjustments = async (conditions) => {
 // Helper function to get items from sales invoice (handles both 'items' and 'lineItems' structures)
 const getInvoiceItems = (salesInvoice) => {
   if (salesInvoice.items && Array.isArray(salesInvoice.items)) {
-    return salesInvoice.items;
+    return salesInvoice.items.map(it => ({
+      itemId: it.itemId || it._id,
+      quantity: parseFloat(it.quantity) || 0,
+      rate: parseFloat(it.rate) || 0,
+      amount: parseFloat(it.amount || ((parseFloat(it.quantity) || 0) * (parseFloat(it.rate) || 0))) || 0,
+      sku: it.sku || it.itemSku,
+      itemName: it.itemName || it.item || it.name
+    }));
   }
   if (salesInvoice.lineItems && Array.isArray(salesInvoice.lineItems)) {
     // Convert lineItems to items format
     return salesInvoice.lineItems.map(lineItem => ({
       itemId: lineItem.itemData?._id || lineItem.itemId,
-      quantity: lineItem.quantity,
-      rate: lineItem.rate,
-      amount: lineItem.amount
+      quantity: parseFloat(lineItem.quantity) || 0,
+      rate: parseFloat(lineItem.rate) || 0,
+      amount: parseFloat(lineItem.amount || ((parseFloat(lineItem.quantity) || 0) * (parseFloat(lineItem.rate) || 0))) || 0,
+      sku: lineItem.itemSku || lineItem.sku,
+      itemName: lineItem.item || lineItem.itemName
     }));
   }
   return [];
@@ -768,27 +780,40 @@ export const getStockSummary = async (req, res) => {
       }
     }
 
-    // Define all stores that should appear in the report
-    const allStoresList = [
-      "Warehouse",
-      "Grooms Trivandrum",
-      "Palakkad Branch",
-      "Calicut",
-      "Manjery Branch",
-      "Kannur Branch",
-      "Edappal Branch",
-      "Edapally Branch",
-      "Kalpetta Branch",
-      "Kottakkal Branch",
-      "Perinthalmanna Branch",
-      "Chavakkad Branch",
-      "Thrissur Branch",
-      "Perumbavoor Branch",
-      "Kottayam Branch",
-      "MG Road Branch",
-      "Vadakara Branch",
-      "Head Office"
-    ];
+    // Define all stores that should appear in the report - Warehouse, MG Road, plus any newly added stores
+    let dynamicStores = ["Warehouse", "MG Road Branch"];
+    try {
+      const dbStores = await Store.find({ isActive: { $ne: false } }).lean();
+      for (const s of dbStores) {
+        const sName = s.name || s.locName;
+        const lower = (sName || "").toLowerCase().trim();
+        if (sName && !DISCARDED_NAME_PATTERNS.some(pat => lower === pat || lower.startsWith(pat + " ") || lower.endsWith(" " + pat))) {
+          const norm = normalizeWarehouseName(sName);
+          if (norm && !dynamicStores.includes(norm)) {
+            dynamicStores.push(norm);
+          }
+        }
+      }
+
+      const storeUsers = await User.find({
+        locCode: { $exists: true, $ne: "" },
+        power: { $nin: ["admin", "superadmin"] }
+      }).select("username locCode").lean();
+
+      for (const u of storeUsers) {
+        const sName = u.username;
+        const lower = (sName || "").toLowerCase().trim();
+        if (sName && !DISCARDED_NAME_PATTERNS.some(pat => lower === pat || lower.startsWith(pat + " ") || lower.endsWith(" " + pat))) {
+          const norm = normalizeWarehouseName(sName);
+          if (norm && !dynamicStores.includes(norm)) {
+            dynamicStores.push(norm);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Could not query dynamic stores in InventoryReportController:", err.message);
+    }
+    const allStoresList = dynamicStores;
 
     // If a specific warehouse is selected, only show that one.
     // If cluster manager is viewing "All My Stores", filter to their allowed stores only.
@@ -1134,28 +1159,44 @@ export const getOpeningStockReport = async (req, res) => {
       });
     });
     
-    // Convert to arrays and sort
-    const storeReport = Object.entries(storeData).map(([store, data]) => ({
-      store,
-      totalStock: data.totalStock,
-      totalValue: data.totalValue,
-      itemCount: data.itemCount
-    })).sort((a, b) => b.totalStock - a.totalStock);
+    // Convert to arrays and sort - restrict to Warehouse, MG Road, and newly added stores
+    const isAllowedStoreName = (sName) => {
+      if (!sName) return false;
+      const lower = sName.toLowerCase().trim();
+      if (lower.includes("warehouse") || lower.includes("mg road") || lower.includes("mgroad")) return true;
+      if (DISCARDED_NAME_PATTERNS.some(pat => lower === pat || lower.startsWith(pat + " ") || lower.endsWith(" " + pat) || lower === "g." + pat || lower === "g-" + pat)) {
+        return false;
+      }
+      return true;
+    };
+
+    const storeReport = Object.entries(storeData)
+      .filter(([store]) => isAllowedStoreName(store))
+      .map(([store, data]) => ({
+        store,
+        totalStock: data.totalStock,
+        totalValue: data.totalValue,
+        itemCount: data.itemCount
+      })).sort((a, b) => b.totalStock - a.totalStock);
     
-    // Sort item details by creation date (newest first)
-    itemDetails.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Sort item details by creation date (newest first) and restrict to allowed stores
+    const itemDetailsFiltered = itemDetails.filter(item => isAllowedStoreName(item.store));
+    itemDetailsFiltered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
     // Filter by warehouse if specified
     let filteredStoreReport = storeReport;
-    let filteredItemDetails = itemDetails;
+    let filteredItemDetails = itemDetailsFiltered;
     
     if (warehouse && warehouse !== 'all' && warehouse !== 'Warehouse') {
       const targetWarehouse = normalizeWarehouseName(warehouse);
       
       filteredStoreReport = storeReport.filter(store => store.store === targetWarehouse);
-      filteredItemDetails = itemDetails.filter(item => item.store === targetWarehouse);
+      filteredItemDetails = itemDetailsFiltered.filter(item => item.store === targetWarehouse);
       
       // Recalculate totals for filtered data
+      totalOpeningStock = filteredItemDetails.reduce((sum, item) => sum + item.openingStock, 0);
+      totalOpeningValue = filteredItemDetails.reduce((sum, item) => sum + item.openingValue, 0);
+    } else {
       totalOpeningStock = filteredItemDetails.reduce((sum, item) => sum + item.openingStock, 0);
       totalOpeningValue = filteredItemDetails.reduce((sum, item) => sum + item.openingValue, 0);
     }
@@ -1186,7 +1227,7 @@ export const getOpeningStockReport = async (req, res) => {
   } catch (error) {
     console.error("❌ Get opening stock report error:", error);
     res.status(500).json({ 
-      success: false,
+      success: false, 
       message: "Server error", 
       error: error.message 
     });
@@ -1370,12 +1411,23 @@ export const getStockOnHandReport = async (req, res) => {
     for (const item of items) {
       const itemId = item._id?.toString();
 
-      // Determine which warehouse stocks to process
+      // Determine which warehouse stocks to process - strictly restricted to Warehouse and MG Road
       let warehouseStocksToProcess = item.warehouseStocks || [];
       if (warehouse && warehouse !== "All Stores") {
         warehouseStocksToProcess = warehouseStocksToProcess.filter(ws => ws?.warehouse && warehouseMatches(ws.warehouse));
       } else if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
         warehouseStocksToProcess = warehouseStocksToProcess.filter(ws => ws?.warehouse && warehouseMatches(ws.warehouse));
+      } else {
+        const isAllowedWS = (wh) => {
+          if (!wh) return false;
+          const lower = wh.toLowerCase().trim();
+          if (lower.includes("warehouse") || lower.includes("mg road") || lower.includes("mgroad")) return true;
+          if (DISCARDED_NAME_PATTERNS.some(pat => lower === pat || lower.startsWith(pat + " ") || lower.endsWith(" " + pat) || lower === "g." + pat || lower === "g-" + pat)) {
+            return false;
+          }
+          return true;
+        };
+        warehouseStocksToProcess = warehouseStocksToProcess.filter(ws => ws?.warehouse && isAllowedWS(ws.warehouse));
       }
       
       for (const warehouseStock of warehouseStocksToProcess) {
@@ -1526,7 +1578,7 @@ export const getStockOnHandReport = async (req, res) => {
 // Get Inventory Aging Report
 export const getInventoryAging = async (req, res) => {
   try {
-    const { locCode, warehouse, category, asOfDate, allowedLocCodes, search, bracket } = req.query;
+    const { locCode, warehouse, category, group, salesStatus, asOfDate, allowedLocCodes, search, bracket } = req.query;
     const userId = req.query.userId || req.body.userId;
 
     // Check admin / permissions
@@ -1573,14 +1625,15 @@ export const getInventoryAging = async (req, res) => {
              normalizedWs === normalizedWarehouse;
     };
 
-    // 1. Fetch Inward Transactions to find stock addition dates (Bills, Receives, Transfers, Adjustments)
-    const [bills, receives, transferOrders, adjustments, standaloneItems, itemGroups] = await Promise.all([
+    // 1. Fetch Inward Transactions, Items, Groups, and Sales Invoices in parallel
+    const [bills, receives, transferOrders, adjustments, standaloneItems, itemGroups, salesInvoices] = await Promise.all([
       Bill.find({}).select('billNumber billDate warehouse branch items createdAt').lean(),
       PurchaseReceive.find({ status: { $ne: 'cancelled' } }).select('receiveNumber receivedDate toWarehouse items createdAt').lean(),
       TransferOrder.find({ status: { $in: ['transferred', 'in_transit'] } }).select('transferOrderNumber date destinationWarehouse items createdAt').lean(),
       InventoryAdjustment.find({}).select('adjustmentNumber date warehouse branch items createdAt').lean(),
       ShoeItem.find({ isActive: { $ne: false } }).lean(),
       ItemGroup.find({ isActive: { $ne: false } }).lean(),
+      SalesInvoice.find({ status: { $nin: ['cancelled', 'draft'] } }).select('invoiceNumber invoiceDate warehouse branch items lineItems createdAt').lean(),
     ]);
 
     // Build lookup maps for inward dates
@@ -1593,7 +1646,6 @@ export const getInventoryAging = async (req, res) => {
       if (isNaN(d.getTime())) return;
       
       const existing = inwardHistoryMap.get(key);
-      // Keep the most recent inward date for that item/warehouse, or the one closest to asOfDate
       if (!existing || d > existing.date) {
         inwardHistoryMap.set(key, { date: d, source });
       }
@@ -1670,6 +1722,61 @@ export const getInventoryAging = async (req, res) => {
       });
     });
 
+    // Index Sales Invoices for item sales tracking
+    const salesMap = new Map();
+    const recordSale = (key, qty, amount, date) => {
+      if (!key) return;
+      const existing = salesMap.get(key) || { soldQuantity: 0, soldValue: 0, lastSaleDate: null };
+      existing.soldQuantity += qty;
+      existing.soldValue += amount;
+      if (date && (!existing.lastSaleDate || new Date(date) > new Date(existing.lastSaleDate))) {
+        existing.lastSaleDate = date;
+      }
+      salesMap.set(key, existing);
+    };
+
+    salesInvoices.forEach(si => {
+      const sDate = si.invoiceDate || si.createdAt;
+      const sWh = normalizeWarehouseName(si.warehouse || si.branch || "Warehouse");
+      const invoiceItems = getInvoiceItems(si);
+      invoiceItems.forEach(it => {
+        const qty = parseFloat(it.quantity) || 0;
+        const amt = parseFloat(it.amount || (qty * (it.rate || 0))) || 0;
+        const itemId = (it.itemId || "").toString();
+        const sku = (it.sku || "").toString().toLowerCase().trim();
+
+        if (itemId) {
+          recordSale(itemId, qty, amt, sDate);
+          if (sWh) recordSale(`${itemId}_${sWh}`, qty, amt, sDate);
+        }
+        if (sku) {
+          recordSale(sku, qty, amt, sDate);
+          if (sWh) recordSale(`${sku}_${sWh}`, qty, amt, sDate);
+        }
+      });
+    });
+
+    // Build SKU / ID to Group mapping and collect distinct group names
+    const skuToGroup = new Map();
+    const allDistinctGroups = new Set();
+
+    itemGroups.forEach(grp => {
+      const gName = grp.name || grp.groupName;
+      const gId = grp._id?.toString() || grp.groupId;
+      if (gName) {
+        allDistinctGroups.add(gName.trim());
+        const variants = Array.isArray(grp.itemsList) && grp.itemsList.length > 0 
+          ? grp.itemsList 
+          : (Array.isArray(grp.items) ? grp.items : []);
+        variants.forEach(v => {
+          const vSku = (v.sku || "").toString().toLowerCase().trim();
+          const vId = (v._id || v.id || "").toString();
+          if (vSku) skuToGroup.set(vSku, { name: gName, id: gId });
+          if (vId) skuToGroup.set(vId, { name: gName, id: gId });
+        });
+      }
+    });
+
     // 2. Process All Items and compute stock aging
     const agingRecords = [];
 
@@ -1685,20 +1792,39 @@ export const getInventoryAging = async (req, res) => {
         return;
       }
 
+      const itemId = (item._id || item.id || "").toString();
+      const itemSku = (item.sku || "").toString().toLowerCase().trim();
+      const warehouseStocks = item.warehouseStocks || [];
+
+      // Determine group name and id
+      let resolvedGroupName = parentGroup?.name || parentGroup?.groupName || item.groupName || null;
+      let resolvedGroupId = parentGroup?._id?.toString() || parentGroup?.groupId || item.itemGroupId || null;
+
+      if (!resolvedGroupName && itemSku && skuToGroup.has(itemSku)) {
+        const found = skuToGroup.get(itemSku);
+        resolvedGroupName = found.name;
+        resolvedGroupId = found.id;
+      }
+      if (!resolvedGroupName && itemId && skuToGroup.has(itemId)) {
+        const found = skuToGroup.get(itemId);
+        resolvedGroupName = found.name;
+        resolvedGroupId = found.id;
+      }
+
+      if (resolvedGroupName) {
+        allDistinctGroups.add(resolvedGroupName.trim());
+      }
+
       // Search filter check
       if (search && search.trim() !== "") {
         const s = search.toLowerCase().trim();
         const name = (item.itemName || item.name || "").toLowerCase();
-        const sku = (item.sku || "").toLowerCase();
-        const gName = (parentGroup?.name || parentGroup?.groupName || item.groupName || "").toLowerCase();
+        const sku = itemSku;
+        const gName = (resolvedGroupName || "").toLowerCase();
         if (!name.includes(s) && !sku.includes(s) && !gName.includes(s)) {
           return;
         }
       }
-
-      const itemId = (item._id || item.id || "").toString();
-      const itemSku = (item.sku || "").toString().toLowerCase().trim();
-      const warehouseStocks = item.warehouseStocks || [];
 
       // For each target warehouse, find stock or record
       targetWarehouses.forEach(targetWh => {
@@ -1764,10 +1890,22 @@ export const getInventoryAging = async (req, res) => {
           bracketColor = "red";
         }
 
-        // Bracket filter if specified
-        if (bracket && bracket !== "all" && ageBracket !== bracket) {
-          return;
+        // Lookup sales for this item/warehouse
+        let saleInfo = null;
+        if (warehouse && warehouse !== "All Stores") {
+          for (const variation of [normalizedTarget, ...targetVariations]) {
+            saleInfo = salesMap.get(`${itemId}_${variation}`) || salesMap.get(`${itemSku}_${variation}`);
+            if (saleInfo) break;
+          }
         }
+        if (!saleInfo) {
+          saleInfo = salesMap.get(itemId) || salesMap.get(itemSku) || { soldQuantity: 0, soldValue: 0, lastSaleDate: null };
+        }
+
+        const soldQuantity = saleInfo.soldQuantity || 0;
+        const soldValue = saleInfo.soldValue || 0;
+        const lastSaleDate = saleInfo.lastSaleDate ? new Date(saleInfo.lastSaleDate).toISOString().split('T')[0] : null;
+        const salesStatus = soldQuantity > 0 ? "sold" : "unsold";
 
         const costPrice = parseFloat(item.costPrice || parentGroup?.costPrice || 0) || 0;
         const sellingPrice = parseFloat(item.sellingPrice || parentGroup?.sellingPrice || 0) || 0;
@@ -1780,7 +1918,8 @@ export const getInventoryAging = async (req, res) => {
           sku: item.sku || "N/A",
           size: item.size || "-",
           category: item.category || parentGroup?.category || "other",
-          groupName: parentGroup?.name || parentGroup?.groupName || item.groupName || null,
+          groupName: resolvedGroupName,
+          groupId: resolvedGroupId,
           isGroupVariant,
           warehouse: targetWh,
           stockOnHand: currentQty,
@@ -1793,7 +1932,11 @@ export const getInventoryAging = async (req, res) => {
           ageInDays,
           ageBracket,
           bracketLabel,
-          bracketColor
+          bracketColor,
+          soldQuantity,
+          soldValue,
+          lastSaleDate,
+          salesStatus,
         });
       });
     };
@@ -1829,28 +1972,41 @@ export const getInventoryAging = async (req, res) => {
     // Sort by age descending (oldest stock first)
     agingRecords.sort((a, b) => b.ageInDays - a.ageInDays);
 
-    // 3. Compute Summary Metrics & Bracket Aggregations
+    // 3. Compute Summary Metrics & Bracket Aggregations across all matching records
     let grandTotalStock = 0;
     let grandTotalValue = 0;
     let totalAgeDaysWeighted = 0;
+    let grandTotalSold = 0;
+    let grandTotalSoldValue = 0;
+    let totalSoldItemsCount = 0;
+    let totalUnsoldItemsCount = 0;
 
     const bracketsSummary = {
-      "0_30": { bracket: "0_30", label: "0 - 30 Days", count: 0, stock: 0, value: 0, color: "emerald", badgeBg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-      "31_60": { bracket: "31_60", label: "31 - 60 Days", count: 0, stock: 0, value: 0, color: "blue", badgeBg: "bg-blue-50 text-blue-700 border-blue-200" },
-      "61_90": { bracket: "61_90", label: "61 - 90 Days", count: 0, stock: 0, value: 0, color: "amber", badgeBg: "bg-amber-50 text-amber-700 border-amber-200" },
-      "91_120": { bracket: "91_120", label: "91 - 120 Days", count: 0, stock: 0, value: 0, color: "orange", badgeBg: "bg-orange-50 text-orange-700 border-orange-200" },
-      "120_plus": { bracket: "120_plus", label: "120+ Days", count: 0, stock: 0, value: 0, color: "red", badgeBg: "bg-red-50 text-red-700 border-red-200" }
+      "0_30": { bracket: "0_30", label: "0 - 30 Days", count: 0, stock: 0, value: 0, soldQty: 0, soldValue: 0, color: "emerald", badgeBg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+      "31_60": { bracket: "31_60", label: "31 - 60 Days", count: 0, stock: 0, value: 0, soldQty: 0, soldValue: 0, color: "blue", badgeBg: "bg-blue-50 text-blue-700 border-blue-200" },
+      "61_90": { bracket: "61_90", label: "61 - 90 Days", count: 0, stock: 0, value: 0, soldQty: 0, soldValue: 0, color: "amber", badgeBg: "bg-amber-50 text-amber-700 border-amber-200" },
+      "91_120": { bracket: "91_120", label: "91 - 120 Days", count: 0, stock: 0, value: 0, soldQty: 0, soldValue: 0, color: "orange", badgeBg: "bg-orange-50 text-orange-700 border-orange-200" },
+      "120_plus": { bracket: "120_plus", label: "120+ Days", count: 0, stock: 0, value: 0, soldQty: 0, soldValue: 0, color: "red", badgeBg: "bg-red-50 text-red-700 border-red-200" }
     };
 
     agingRecords.forEach(rec => {
       grandTotalStock += rec.stockOnHand;
       grandTotalValue += rec.stockValue;
+      grandTotalSold += rec.soldQuantity;
+      grandTotalSoldValue += rec.soldValue;
+      if (rec.soldQuantity > 0) {
+        totalSoldItemsCount++;
+      } else {
+        totalUnsoldItemsCount++;
+      }
       totalAgeDaysWeighted += (rec.ageInDays * rec.stockOnHand);
 
       if (bracketsSummary[rec.ageBracket]) {
         bracketsSummary[rec.ageBracket].count += 1;
         bracketsSummary[rec.ageBracket].stock += rec.stockOnHand;
         bracketsSummary[rec.ageBracket].value += rec.stockValue;
+        bracketsSummary[rec.ageBracket].soldQty += rec.soldQuantity;
+        bracketsSummary[rec.ageBracket].soldValue += rec.soldValue;
       }
     });
 
@@ -1858,21 +2014,43 @@ export const getInventoryAging = async (req, res) => {
     const criticalAgedValue = bracketsSummary["91_120"].value + bracketsSummary["120_plus"].value;
     const criticalAgedStock = bracketsSummary["91_120"].stock + bracketsSummary["120_plus"].stock;
 
+    // Filter returned items if specific group, salesStatus, or bracket was passed in query
+    let returnItems = agingRecords;
+    if (group && group !== "all") {
+      if (group === "ungrouped") {
+        returnItems = returnItems.filter(r => !r.groupName || r.groupName === "Standalone");
+      } else {
+        returnItems = returnItems.filter(r => (r.groupName || "").toLowerCase() === group.toLowerCase());
+      }
+    }
+    if (salesStatus && salesStatus !== "all") {
+      returnItems = returnItems.filter(r => r.salesStatus === salesStatus);
+    }
+    if (bracket && bracket !== "all") {
+      returnItems = returnItems.filter(r => r.ageBracket === bracket);
+    }
+
     res.status(200).json({
       success: true,
       data: {
         summary: {
           totalItems: agingRecords.length,
+          filteredItemsCount: returnItems.length,
           totalStock: grandTotalStock,
           totalValue: grandTotalValue,
           averageAgeDays,
           criticalAgedValue,
           criticalAgedStock,
+          totalSoldQuantity: grandTotalSold,
+          totalSoldValue: grandTotalSoldValue,
+          totalSoldItems: totalSoldItemsCount,
+          totalUnsoldItems: totalUnsoldItemsCount,
           asOfDate: targetDate.toISOString().split('T')[0],
           warehouse: warehouse || "All Stores"
         },
         brackets: bracketsSummary,
-        items: agingRecords
+        groups: Array.from(allDistinctGroups).sort((a, b) => a.localeCompare(b)),
+        items: returnItems
       }
     });
 

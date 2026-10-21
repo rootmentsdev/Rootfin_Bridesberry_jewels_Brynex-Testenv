@@ -7,6 +7,7 @@ import { FiDownload, FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { Loader2, Printer, RotateCcw } from "lucide-react";
 import baseUrl from "../api/api";
 import { useSidebar } from "../hooks/useSidebar.js";
+import { useActiveStores } from "../utils/storeService.js";
 
 const TWS_BASE = "https://rentalapi.rootments.live/api/GetBooking";
 
@@ -18,34 +19,6 @@ const firstOfMonth = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 };
-
-const STORE_LIST = [
-  { locName: "G-Edappal",        locCode: "707" },
-  { locName: "G-Edappally",      locCode: "702" },
-  { locName: "G-Kalpetta",       locCode: "717" },
-  { locName: "G-Kannur",         locCode: "716" },
-  { locName: "G-Kottakkal",      locCode: "711" },
-  { locName: "G-Kottayam",       locCode: "701" },
-  { locName: "G-Manjeri",        locCode: "710" },
-  { locName: "G-Mg Road",        locCode: "718" },
-  { locName: "G-Palakkad",       locCode: "705" },
-  { locName: "G-Perinthalmanna", locCode: "709" },
-  { locName: "G-Perumbavoor",    locCode: "703" },
-  { locName: "G-Thrissur",       locCode: "704" },
-  { locName: "G-Vadakara",       locCode: "708" },
-  { locName: "G-Chavakkad",      locCode: "706" },
-  { locName: "G-Calicut",        locCode: "712" },
-  { locName: "HEAD OFFICE01",    locCode: "759" },
-  { locName: "Office",           locCode: "102" },
-  { locName: "Production",       locCode: "101" },
-  { locName: "SG-Trivandrum",    locCode: "700" },
-  { locName: "Warehouse",        locCode: "858" },
-  { locName: "WAREHOUSE",        locCode: "103" },
-  { locName: "Z-Edappal",        locCode: "100" },
-  { locName: "Z-Edapally",       locCode: "144" },
-  { locName: "Z-Kottakkal",      locCode: "122" },
-  { locName: "Z-Perinthalmanna", locCode: "133" },
-];
 
 const EXPENSE_CATEGORIES = new Set([
   "petty expenses","staff reimbursement","maintenance expenses","telephone internet",
@@ -130,6 +103,7 @@ const customSelectStyles = {
 
 export default function IncomeExpenseReport() {
   const isSidebarOpen = useSidebar();
+  const { stores: STORE_LIST } = useActiveStores();
   const user = JSON.parse(localStorage.getItem("rootfinuser")) || {};
   const isAdmin = (user.power || "").toLowerCase() === "admin";
   const isClusterManager = (user.role || "").toLowerCase() === "cluster_manager";

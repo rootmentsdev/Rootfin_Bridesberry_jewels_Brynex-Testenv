@@ -7,12 +7,7 @@ import AttachmentDisplay from "../components/AttachmentDisplay";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
 import baseUrl from "../api/api";
 import useSidebar from "../hooks/useSidebar";
-
-// All warehouses/stores in the system - restricted to Warehouse and MG Road
-const ALL_WAREHOUSES = [
-  "Warehouse",
-  "MG Road",
-];
+import { useActiveStores } from "../utils/storeService.js";
 
 const ShoeSalesItemGroupDetail = () => {
   const isSidebarOpen = useSidebar();
@@ -56,26 +51,15 @@ const ShoeSalesItemGroupDetail = () => {
                   user?.power === "admin" || 
                   (user?.locCode && (user.locCode === '858' || user.locCode === '103'));
   
+  const { stores: activeStores, warehouseOptions } = useActiveStores();
+
   // Fallback locations mapping
-  const fallbackLocations = [
-    { "locName": "Warehouse", "locCode": "858" },
-    { "locName": "G.Kottayam", "locCode": "701" },
-    { "locName": "G.Kannur", "locCode": "716" },
-    { "locName": "G.Calicut ", "locCode": "712" },
-    { "locName": "G.Manjeri", "locCode": "710" },
-    { "locName": "G.Thrissur", "locCode": "704" },
-    { "locName": "G.Perumbavoor", "locCode": "703" },
-    { "locName": "G.Palakkad ", "locCode": "705" },
-    { "locName": "G.Edappal", "locCode": "707" },
-    { "locName": "G-Edappally", "locCode": "702" },
-    { "locName": "SG-Trivandrum", "locCode": "700" },
-    { "locName": "G.Kalpetta", "locCode": "717" },
-    { "locName": "G.Chavakkad", "locCode": "706" },
-    { "locName": "G.Perinthalmanna", "locCode": "709" },
-    { "locName": "G.Kottakkal", "locCode": "711" },
-    { "locName": "G.Mg Road", "locCode": "718" },
-    { "locName": "WAREHOUSE", "locCode": "103" }
-  ];
+  const fallbackLocations = activeStores && activeStores.length > 0
+    ? activeStores
+    : [
+        { "locName": "Warehouse", "locCode": "858" },
+        { "locName": "MG Road", "locCode": "718" }
+      ];
   
   // Get user's warehouse name
   const getUserWarehouse = () => {
@@ -92,14 +76,15 @@ const ShoeSalesItemGroupDetail = () => {
 
   // Initialize all warehouses list
   useEffect(() => {
+    const list = warehouseOptions && warehouseOptions.length > 0 ? warehouseOptions : ["Warehouse", "MG Road"];
     // Sort warehouses: "Warehouse" first, then alphabetically
-    const sortedWarehouses = [...ALL_WAREHOUSES].sort((a, b) => {
+    const sortedWarehouses = [...list].sort((a, b) => {
       if (a === "Warehouse") return -1;
       if (b === "Warehouse") return 1;
       return a.localeCompare(b);
     });
     setAllWarehouses(sortedWarehouses);
-  }, []);
+  }, [warehouseOptions]);
 
   useEffect(() => {
     const fetchItemGroup = async () => {

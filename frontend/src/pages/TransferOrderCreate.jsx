@@ -8,6 +8,7 @@ import Header from "../components/Header";
 import baseUrl from "../api/api";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
 import useSidebar from "../hooks/useSidebar";
+import { useActiveStores } from "../utils/storeService.js";
 
 const Label = ({ children, required = false }) => (
   <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${required ? "text-[#ef4444]" : "text-[#64748b]"}`}>
@@ -1197,35 +1198,15 @@ const TransferOrderCreate = () => {
   const userId = user?.email || user?._id || user?.id || "";
   const isAdmin = user?.power === "admin";
   const userLocCode = user?.locCode || "";
+  const { stores: activeStores, warehouseOptions: activeWarehouseOptions } = useActiveStores();
 
   // Fallback locations mapping
-  const fallbackLocations = [
-    { "locName": "Z-Edapally1", "locCode": "144" },
-    { "locName": "Warehouse", "locCode": "858" },
-    { "locName": "G-Edappally", "locCode": "702" },
-    { "locName": "HEAD OFFICE01", "locCode": "759" },
-    { "locName": "SG-Trivandrum", "locCode": "700" },
-    { "locName": "Z- Edappal", "locCode": "100" },
-    { "locName": "Z.Perinthalmanna", "locCode": "133" },
-    { "locName": "Z.Kottakkal", "locCode": "122" },
-    { "locName": "G.Kottayam", "locCode": "701" },
-    { "locName": "G.Perumbavoor", "locCode": "703" },
-    { "locName": "G.Thrissur", "locCode": "704" },
-    { "locName": "G.Chavakkad", "locCode": "706" },
-    { "locName": "G.Calicut ", "locCode": "712" },
-    { "locName": "G.Vadakara", "locCode": "708" },
-    { "locName": "G.Edappal", "locCode": "707" },
-    { "locName": "G.Perinthalmanna", "locCode": "709" },
-    { "locName": "G.Kottakkal", "locCode": "711" },
-    { "locName": "G.Manjeri", "locCode": "710" },
-    { "locName": "G.Palakkad ", "locCode": "705" },
-    { "locName": "G.Kalpetta", "locCode": "717" },
-    { "locName": "G.Kannur", "locCode": "716" },
-    { "locName": "G.Mg Road", "locCode": "718" },
-    { "locName": "Production", "locCode": "101" },
-    { "locName": "Office", "locCode": "102" },
-    { "locName": "WAREHOUSE", "locCode": "103" }
-  ];
+  const fallbackLocations = activeStores && activeStores.length > 0
+    ? activeStores
+    : [
+        { "locName": "Warehouse", "locCode": "858" },
+        { "locName": "MG Road", "locCode": "718" }
+      ];
 
   // Get user's location name and warehouse
   let userLocName = "";
@@ -1277,10 +1258,9 @@ const TransferOrderCreate = () => {
   const bulkScanTimeoutRef = useRef(null);
 
   // Warehouse options (same as branch options)
-  const warehouseOptions = [
-    "Brides Berry",
-    "Warehouse",
-  ];
+  const warehouseOptions = activeWarehouseOptions && activeWarehouseOptions.length > 0
+    ? activeWarehouseOptions
+    : ["Warehouse", "MG Road"];
 
   // Set default source warehouse for store users
   useEffect(() => {

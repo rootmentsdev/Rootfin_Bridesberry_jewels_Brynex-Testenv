@@ -1,5 +1,7 @@
 import bcrypt from 'bcrypt';
 import User from '../model/UserModel.js';
+import Store from '../model/Store.js';
+import { isAllowedStore, fallbackStores } from './StoreController.js';
 
 export const SignUp = async (req, res) => {
     try {
@@ -33,6 +35,27 @@ export const SignUp = async (req, res) => {
         });
 
         await newUser.save();
+
+        // Also sync/create store entry in Store collection if locCode is provided
+        if (locCode && locCode.trim()) {
+            try {
+                await Store.findOneAndUpdate(
+                    { locCode: locCode.toString().trim() },
+                    {
+                        name: username.trim(),
+                        locCode: locCode.toString().trim(),
+                        address: address || '',
+                        phone: phone || '',
+                        email: email || '',
+                        isActive: true,
+                        storeType: 'branch'
+                    },
+                    { upsert: true, new: true }
+                );
+            } catch (storeError) {
+                console.warn("Could not upsert Store model in SignUp:", storeError.message);
+            }
+        }
 
         res.status(201).json({
             message: 'User created successfully, and mandatory training assigned.',
@@ -97,11 +120,27 @@ export const Login = async (req, res) => {
 
 export const GetAllStores = async (req, res) => {
     try {
-        const users = await User.find({}, { password: 0 }); // Exclude password from response
-        const stores = users.map(user => ({
-            locName: user.username,
-            locCode: user.locCode,
-        }));
+        const users = await User.find({ locCode: { $exists: true, $ne: "" } }, { password: 0 });
+        const storeMap = new Map();
+        
+        // Seed with fallback stores (Warehouse and MG Road)
+        fallbackStores.forEach(s => {
+            storeMap.set(s.locCode, { locName: s.name || s.locName, locCode: s.locCode });
+        });
+
+        // Add active/newly created stores from users
+        users.forEach(user => {
+            const code = (user.locCode || "").toString().trim();
+            const name = (user.username || "").trim();
+            const loc = { locName: name, locCode: code, name: name };
+            if (code && isAllowedStore(loc)) {
+                storeMap.set(code, { locName: name, locCode: code });
+            }
+        });
+
+        const stores = Array.from(storeMap.values()).sort((a, b) => 
+            a.locName.localeCompare(b.locName)
+        );
         
         res.status(200).json({
             message: 'Stores retrieved successfully',
@@ -175,6 +214,25 @@ export const UpdateUser = async (req, res) => {
         }
 
         await user.save();
+
+        if (user.locCode && user.locCode.trim()) {
+            try {
+                await Store.findOneAndUpdate(
+                    { locCode: user.locCode.toString().trim() },
+                    {
+                        name: user.username.trim(),
+                        locCode: user.locCode.toString().trim(),
+                        address: user.address || '',
+                        phone: user.phone || '',
+                        email: user.email || '',
+                        isActive: true
+                    },
+                    { upsert: true, new: true }
+                );
+            } catch (err) {
+                console.warn("Could not sync store in UpdateUser:", err.message);
+            }
+        }
 
         res.status(200).json({
             message: 'User updated successfully.',

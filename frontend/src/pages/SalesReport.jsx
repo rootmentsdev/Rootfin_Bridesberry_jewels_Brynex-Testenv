@@ -7,6 +7,7 @@ import { Helmet } from "react-helmet";
 import { FiDownload, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { Loader2, Printer } from "lucide-react";
 import { useSidebar } from "../hooks/useSidebar.js";
+import { useActiveStores } from "../utils/storeService.js";
 
 // Helper to format date into "01 Sep, 2026"
 const formatDisplayDate = (dateStr) => {
@@ -110,34 +111,11 @@ const SalesReport = () => {
     }
   }, []);
 
-  const storeOptions = [
+  const { stores: activeStores } = useActiveStores();
+  const storeOptions = useMemo(() => [
     { value: "all", label: "All Stores" },
-    { value: "702", label: "SG - Edappally" },
-    { value: "144", label: "Z-Edapally" },
-    { value: "858", label: "Warehouse" },
-    { value: "759", label: "HEAD OFFICE01" },
-    { value: "700", label: "SG-Trivandrum" },
-    { value: "100", label: "Z-Edappal" },
-    { value: "133", label: "Z.Perinthalmanna" },
-    { value: "122", label: "Z.Kottakkal" },
-    { value: "701", label: "G.Kottayam" },
-    { value: "703", label: "G.Perumbavoor" },
-    { value: "704", label: "G.Thrissur" },
-    { value: "706", label: "G.Chavakkad" },
-    { value: "712", label: "G.Calicut" },
-    { value: "708", label: "G.Vadakara" },
-    { value: "707", label: "G.Edappal" },
-    { value: "709", label: "G.Perinthalmanna" },
-    { value: "711", label: "G.Kottakkal" },
-    { value: "710", label: "G.Manjeri" },
-    { value: "705", label: "G.Palakkad" },
-    { value: "717", label: "G.Kalpetta" },
-    { value: "716", label: "G.Kannur" },
-    { value: "718", label: "G.MG Road" },
-    { value: "101", label: "Production" },
-    { value: "102", label: "Office" },
-    { value: "103", label: "WAREHOUSE" },
-  ];
+    ...activeStores.map((s) => ({ value: s.locCode, label: s.locName })),
+  ], [activeStores]);
 
   const reportTypeOptions = [
     { value: "summary", label: "Sales Summary" },

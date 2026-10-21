@@ -6,6 +6,7 @@ import baseUrl from "../api/api";
 import { Helmet } from "react-helmet";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useSidebar } from "../hooks/useSidebar.js";
+import { useActiveStores } from "../utils/storeService.js";
 
 // Function to format location names with proper spacing
 const formatLocationName = (name) => {
@@ -18,30 +19,8 @@ const formatLocationName = (name) => {
 
 // Fallback locations for backward compatibility
 const fallbackLocations = [
-  { value: "Production", locCode: "101" },
-  { value: "Office", locCode: "102" },
-  { value: "WAREHOUSE", locCode: "103" },
-  { value: "Z-Edapally1", locCode: "144" },
-  { value: "G-Edappally", locCode: "702" },
-  { value: "SG-Trivandrum", locCode: "700" },
-  { value: "Z- Edappal", locCode: "100" },
-  { value: "Z.Perinthalmanna", locCode: "133" },
-  { value: "Z.Kottakkal", locCode: "122" },
-  { value: "G.Kottayam", locCode: "701" },
-  { value: "G.Perumbavoor", locCode: "703" },
-  { value: "G.Thrissur", locCode: "704" },
-  { value: "G.Chavakkad", locCode: "706" },
-  { value: "G.Calicut ", locCode: "712" },
-  { value: "G.Vadakara", locCode: "708" },
-  { value: "G.Edappal", locCode: "707" },
-  { value: "G.Perinthalmanna", locCode: "709" },
-  { value: "G.Kottakkal", locCode: "711" },
-  { value: "G.Manjeri", locCode: "710" },
-  { value: "G.Palakkad ", locCode: "705" },
-  { value: "G.Kalpetta", locCode: "717" },
-  { value: "G.Kannur", locCode: "716" },
-  { value: "G.MG Road", locCode: "718" },
-  { value: "Dappr Squad", locCode: "555" },
+  { value: "Warehouse", locCode: "858" },
+  { value: "MG Road", locCode: "718" },
 ];
 
 // Custom React-Select styles for clean modern UI
@@ -89,7 +68,8 @@ const AdminClose = () => {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [AllLocations, setAllLocations] = useState(
+  const { stores: activeStores } = useActiveStores();
+  const [AllLocations, setAllLocations] = useState(() =>
     fallbackLocations.map((loc) => ({
       ...loc,
       label: formatLocationName(loc.value),
@@ -105,14 +85,17 @@ const AdminClose = () => {
   const officeAllowedLocCodes = ["101", "102", "103"];
 
   useEffect(() => {
-    const locs = fallbackLocations
+    const source = activeStores && activeStores.length > 0
+      ? activeStores.map((s) => ({ value: s.locName, locCode: s.locCode }))
+      : fallbackLocations;
+    const locs = source
       .filter((loc) => !isOfficeUser || officeAllowedLocCodes.includes(loc.locCode))
       .map((loc) => ({
         ...loc,
         label: formatLocationName(loc.value),
       }));
     setAllLocations(locs);
-  }, []);
+  }, [activeStores, isOfficeUser]);
 
   // Load existing closing data when location and date are selected
   useEffect(() => {

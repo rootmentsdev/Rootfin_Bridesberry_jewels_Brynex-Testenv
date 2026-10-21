@@ -3,6 +3,7 @@ import { FaEye, FaEyeSlash, FaEdit, FaTrash } from "react-icons/fa";
 import Header from "../components/Header";
 import baseUrl from "../api/api";
 import useSidebar from "../hooks/useSidebar";
+import { fetchActiveStores, saveCustomStore } from "../utils/storeService";
 
 const ManageStores = () => {
   const isSidebarOpen = useSidebar();
@@ -150,11 +151,49 @@ const ManageStores = () => {
             const data = await response.json();
 
             if (response.ok) {
+                const trimmedName = username.trim();
+                const trimmedCode = (locCode || "").trim();
+
+                if (trimmedName && trimmedCode) {
+                    saveCustomStore({
+                        locName: trimmedName,
+                        locCode: trimmedCode,
+                        name: trimmedName,
+                        address: address || "",
+                        phone: phone || "",
+                        email: email || ""
+                    });
+
+                    // Dual sync to /api/stores
+                    try {
+                        await fetch(`${baseUrl.baseUrl}api/stores`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                name: trimmedName,
+                                locCode: trimmedCode,
+                                locName: trimmedName,
+                                address: address || "",
+                                phone: phone || "",
+                                email: email || "",
+                                isActive: true
+                            })
+                        });
+                    } catch (e) {
+                        console.warn("Could not sync to /api/stores:", e);
+                    }
+                }
+
                 alert(data.message || (isEditMode ? "Store updated successfully!" : "Store created successfully!"));
                 // Reset form
                 handleCancelEdit();
                 // Refresh stores list
                 fetchStores();
+                try {
+                    await fetchActiveStores();
+                } catch (err) {
+                    console.error("Error refreshing active stores:", err);
+                }
             } else {
                 alert(data.message || `Failed to ${isEditMode ? 'update' : 'create'} store. Please try again.`);
             }
@@ -351,29 +390,8 @@ const ManageStores = () => {
                                     </label>
                                     <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1">
                                         {[
-                                            { locName: "Z-Edapally1", locCode: "144" },
                                             { locName: "Warehouse", locCode: "858" },
-                                            { locName: "G-Edappally", locCode: "702" },
-                                            { locName: "HEAD OFFICE01", locCode: "759" },
-                                            { locName: "SG-Trivandrum", locCode: "700" },
-                                            { locName: "Z- Edappal", locCode: "100" },
-                                            { locName: "Z.Perinthalmanna", locCode: "133" },
-                                            { locName: "Z.Kottakkal", locCode: "122" },
-                                            { locName: "G.Kottayam", locCode: "701" },
-                                            { locName: "G.Perumbavoor", locCode: "703" },
-                                            { locName: "G.Thrissur", locCode: "704" },
-                                            { locName: "G.Chavakkad", locCode: "706" },
-                                            { locName: "G.Calicut", locCode: "712" },
-                                            { locName: "G.Vadakara", locCode: "708" },
-                                            { locName: "G.Edappal", locCode: "707" },
-                                            { locName: "G.Perinthalmanna", locCode: "709" },
-                                            { locName: "G.Kottakkal", locCode: "711" },
-                                            { locName: "G.Manjeri", locCode: "710" },
-                                            { locName: "G.Palakkad", locCode: "705" },
-                                            { locName: "G.Kalpetta", locCode: "717" },
-                                            { locName: "G.Kannur", locCode: "716" },
-                                            { locName: "G.MG Road", locCode: "718" },
-                                            { locName: "WAREHOUSE", locCode: "103" },
+                                            { locName: "MG Road", locCode: "718" },
                                         ].map(s => (
                                             <label key={s.locCode} className="flex items-center gap-2 cursor-pointer text-sm">
                                                 <input

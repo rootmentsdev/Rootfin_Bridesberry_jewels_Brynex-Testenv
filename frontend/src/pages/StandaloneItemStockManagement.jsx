@@ -5,14 +5,9 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { X, Trash2, Plus, Copy, Package, Store, Check, ArrowLeft, Layers } from "lucide-react";
 import baseUrl from "../api/api";
 import useSidebar from "../hooks/useSidebar";
+import { useActiveStores, isAllowedStoreNameOrCode } from "../utils/storeService.js";
 
 const API_ROOT = (baseUrl?.baseUrl || "").replace(/\/$/, "");
-
-// Warehouse names for the dropdown - restricted to Warehouse and MG Road
-const WAREHOUSES = [
-  "Warehouse",
-  "MG Road"
-];
 
 const StandaloneItemStockManagement = () => {
   const isSidebarOpen = useSidebar();
@@ -22,6 +17,7 @@ const StandaloneItemStockManagement = () => {
   const stockType = (searchParams.get("type") || "accounting").toLowerCase();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { warehouseOptions } = useActiveStores();
   const [copiedField, setCopiedField] = useState(null);
   const [stockRows, setStockRows] = useState([
     { warehouse: "", openingStock: "0", openingStockValue: "0", physicalOpeningStock: "0" }
@@ -31,16 +27,16 @@ const StandaloneItemStockManagement = () => {
   // Prevent mouse wheel from changing number input values
   usePreventNumberInputScroll();
   
-  // Set warehouses to the specified list
+  // Set warehouses to the dynamic active list
   useEffect(() => {
-    // Sort warehouses: "Warehouse" first, then alphabetically
-    const sortedWarehouses = [...WAREHOUSES].sort((a, b) => {
+    const list = warehouseOptions && warehouseOptions.length > 0 ? warehouseOptions : ["Warehouse", "MG Road"];
+    const sortedWarehouses = [...list].sort((a, b) => {
       if (a === "Warehouse") return -1;
       if (b === "Warehouse") return 1;
       return a.localeCompare(b);
     });
     setWarehouses(sortedWarehouses);
-  }, []);
+  }, [warehouseOptions]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +55,7 @@ const StandaloneItemStockManagement = () => {
         if (data.warehouseStocks && Array.isArray(data.warehouseStocks) && data.warehouseStocks.length > 0) {
           const existingRows = data.warehouseStocks
             .filter(stock => {
-              if (!stock.warehouse || !WAREHOUSES.includes(stock.warehouse)) {
+              if (!stock.warehouse || !isAllowedStoreNameOrCode("", stock.warehouse)) {
                 return false;
               }
               const stockOnHand = parseFloat(stock.stockOnHand) || 0;
@@ -116,7 +112,7 @@ const StandaloneItemStockManagement = () => {
             if (data.warehouseStocks && Array.isArray(data.warehouseStocks) && data.warehouseStocks.length > 0) {
               const existingRows = data.warehouseStocks
                 .filter(stock => {
-                  if (!stock.warehouse || !WAREHOUSES.includes(stock.warehouse)) {
+                  if (!stock.warehouse || !isAllowedStoreNameOrCode("", stock.warehouse)) {
                     return false;
                   }
                   const stockOnHand = parseFloat(stock.stockOnHand) || 0;

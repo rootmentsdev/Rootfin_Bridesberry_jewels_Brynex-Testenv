@@ -6,6 +6,7 @@ import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping
 import AttachmentDisplay from "../components/AttachmentDisplay";
 import baseUrl from "../api/api";
 import useSidebar from "../hooks/useSidebar";
+import { getActiveStores, isAllowedStoreNameOrCode } from "../utils/storeService.js";
 
 // Warehouse name mapping: actual names from API -> display names for Stocks page
 const WAREHOUSE_NAME_MAPPING = {
@@ -97,17 +98,18 @@ const WAREHOUSE_NAME_MAPPING = {
   "Vadakara Branch": "Vadakara Branch"
 };
 
-// Display names for the Stocks page (what users see) - restricted to Warehouse and MG Road
-const ALLOWED_WAREHOUSES_DISPLAY = [
-  "Warehouse",
-  "MG Road"
-];
+// Display names for the Stocks page (what users see) - includes Warehouse, MG Road, and all active stores
+const getAllowedWarehousesDisplay = () => {
+  const stores = getActiveStores();
+  return stores && stores.length > 0 ? stores.map(s => s.locName) : ["Warehouse", "MG Road"];
+};
 
 // Get all possible actual warehouse names that map to allowed warehouses
 const getAllowedActualNames = () => {
+  const allowed = getAllowedWarehousesDisplay();
   const actualNames = new Set();
   Object.keys(WAREHOUSE_NAME_MAPPING).forEach(actualName => {
-    if (ALLOWED_WAREHOUSES_DISPLAY.includes(WAREHOUSE_NAME_MAPPING[actualName])) {
+    if (allowed.includes(WAREHOUSE_NAME_MAPPING[actualName])) {
       actualNames.add(actualName);
     }
   });
@@ -132,8 +134,8 @@ const normalizeWarehouseName = (warehouseName) => {
     }
   }
   
-  // If it's already a display name, return it
-  if (ALLOWED_WAREHOUSES_DISPLAY.includes(trimmed)) {
+  // If it's an allowed store name (Warehouse, MG Road, or newly added store)
+  if (isAllowedStoreNameOrCode("", trimmed)) {
     return trimmed;
   }
   
@@ -142,6 +144,7 @@ const normalizeWarehouseName = (warehouseName) => {
 
 const ShoeSalesItemDetailFromGroup = () => {
   const isSidebarOpen = useSidebar();
+  const ALLOWED_WAREHOUSES_DISPLAY = getAllowedWarehousesDisplay();
   const { id, itemId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -359,33 +362,7 @@ const ShoeSalesItemDetailFromGroup = () => {
                   (user?.locCode && (user.locCode === '858' || user.locCode === '103'));
   
   // Fallback locations mapping (same as other pages)
-  const fallbackLocations = [
-    { "locName": "Z-Edapally1", "locCode": "144" },
-    { "locName": "Warehouse", "locCode": "858" },
-    { "locName": "G-Edappally", "locCode": "702" },
-    { "locName": "HEAD OFFICE01", "locCode": "759" },
-    { "locName": "SG-Trivandrum", "locCode": "700" },
-    { "locName": "Z- Edappal", "locCode": "100" },
-    { "locName": "Z.Perinthalmanna", "locCode": "133" },
-    { "locName": "Z.Kottakkal", "locCode": "122" },
-    { "locName": "G.Kottayam", "locCode": "701" },
-    { "locName": "G.Perumbavoor", "locCode": "703" },
-    { "locName": "G.Thrissur", "locCode": "704" },
-    { "locName": "G.Chavakkad", "locCode": "706" },
-    { "locName": "G.Calicut ", "locCode": "712" },
-    { "locName": "G.Vadakara", "locCode": "708" },
-    { "locName": "G.Edappal", "locCode": "707" },
-    { "locName": "G.Perinthalmanna", "locCode": "709" },
-    { "locName": "G.Kottakkal", "locCode": "711" },
-    { "locName": "G.Manjeri", "locCode": "710" },
-    { "locName": "G.Palakkad ", "locCode": "705" },
-    { "locName": "G.Kalpetta", "locCode": "717" },
-    { "locName": "G.Kannur", "locCode": "716" },
-    { "locName": "G.Mg Road", "locCode": "718" },
-    { "locName": "Production", "locCode": "101" },
-    { "locName": "Office", "locCode": "102" },
-    { "locName": "WAREHOUSE", "locCode": "103" }
-  ];
+  const fallbackLocations = getActiveStores();
   
   // Get location name - prioritize locCode lookup over username
   let userLocName = "";

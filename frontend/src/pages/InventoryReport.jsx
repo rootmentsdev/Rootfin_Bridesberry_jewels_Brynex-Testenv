@@ -8,6 +8,7 @@ import { Helmet } from "react-helmet";
 import { FiDownload } from "react-icons/fi";
 import { Loader2, Printer } from "lucide-react";
 import { useSidebar } from "../hooks/useSidebar.js";
+import { useActiveStores } from "../utils/storeService.js";
 
 // Helper to format currency
 const formatCurrency = (amount) => {
@@ -52,30 +53,6 @@ const customSelectStyles = {
   }),
 };
 
-const storeOptions = [
-  { value: "All Stores", label: "All Stores" },
-  { value: "858", label: "Warehouse" },
-  { value: "702", label: "G-Edappally" },
-  { value: "759", label: "HEAD OFFICE01" },
-  { value: "700", label: "SG-Trivandrum" },
-  { value: "701", label: "G.Kottayam" },
-  { value: "703", label: "G.Perumbavoor" },
-  { value: "704", label: "G.Thrissur" },
-  { value: "706", label: "G.Chavakkad" },
-  { value: "712", label: "G.Calicut" },
-  { value: "708", label: "G.Vadakara" },
-  { value: "707", label: "G.Edappal" },
-  { value: "709", label: "G.Perinthalmanna" },
-  { value: "711", label: "G.Kottakkal" },
-  { value: "710", label: "G.Manjeri" },
-  { value: "705", label: "G.Palakkad" },
-  { value: "717", label: "G.Kalpetta" },
-  { value: "716", label: "G.Kannur" },
-  { value: "718", label: "G.Mg Road" },
-  { value: "101", label: "Production" },
-  { value: "102", label: "Office" },
-];
-
 const reportTypeOptions = [
   { value: "summary", label: "Inventory Summary" },
   { value: "stock-summary", label: "Stock Summary" },
@@ -93,6 +70,11 @@ const categoryOptions = [
 const InventoryReport = () => {
   const isSidebarOpen = useSidebar();
   const navigate = useNavigate();
+  const { stores: activeStores } = useActiveStores();
+  const storeOptions = useMemo(() => [
+    { value: "All Stores", label: "All Stores" },
+    ...activeStores.map((s) => ({ value: s.locCode, label: s.locName })),
+  ], [activeStores]);
   const [selectedStore, setSelectedStore] = useState("All Stores");
   const [reportType, setReportType] = useState("summary");
   const [loading, setLoading] = useState(false);

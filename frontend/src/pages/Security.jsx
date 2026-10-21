@@ -8,31 +8,7 @@ import useFetch from "../hooks/useFetch.jsx";
 import openingBalanceMap from "../data/openingBalance.json";
 import { useSidebar } from "../hooks/useSidebar.js";
 import { Download, Printer, Loader2 } from "lucide-react";
-
-/* ---------- Store master list ---------- */
-const AllLoation = [
-  { locName: "Z-Edapally1", locCode: "144" },
-  { locName: "G-Edappally", locCode: "702" },
-  { locName: "SG-Trivandrum", locCode: "700" },
-  { locName: "Z- Edappal", locCode: "100" },
-  { locName: "Z.Perinthalmanna", locCode: "133" },
-  { locName: "Z.Kottakkal", locCode: "122" },
-  { locName: "G.Kottayam", locCode: "701" },
-  { locName: "G.Perumbavoor", locCode: "703" },
-  { locName: "G.Thrissur", locCode: "704" },
-  { locName: "G.Chavakkad", locCode: "706" },
-  { locName: "G.Calicut", locCode: "712" },
-  { locName: "G.Vadakara", locCode: "708" },
-  { locName: "G.Edappal", locCode: "707" },
-  { locName: "G.Perinthalmanna", locCode: "709" },
-  { locName: "G.Kottakkal", locCode: "711" },
-  { locName: "G.Manjeri", locCode: "710" },
-  { locName: "G.Palakkad", locCode: "705" },
-  { locName: "G.Kalpetta", locCode: "717" },
-  { locName: "G.Kannur", locCode: "716" },
-  { locName: "G.Mg Road", locCode: "718" },
-];
-const getStoreName = (c) => AllLoation.find((l) => l.locCode === c)?.locName || "Unknown";
+import { useActiveStores } from "../utils/storeService.js";
 
 /* ---------- helpers ---------- */
 const getMonthStart = (iso) => iso.slice(0, 7) + "-01"; // YYYY-MM-01
@@ -71,6 +47,8 @@ const formatNum = (num) => {
 
 const Security = () => {
   const isSidebarOpen = useSidebar();
+  const { stores: AllLoation } = useActiveStores();
+  const getStoreName = (c) => AllLoation.find((l) => l.locCode === c)?.locName || "Unknown";
   const _now = new Date();
   const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
   const firstOfMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-01`;

@@ -3,9 +3,11 @@ import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 import { Store } from "lucide-react";
 import baseUrl from "../api/api";
 import { useSidebar } from "../hooks/useSidebar.js";
+import { useActiveStores, fetchActiveStores, saveCustomStore } from "../utils/storeService.js";
 
 const AddNewStore = () => {
     const isSidebarOpen = useSidebar();
+    const { stores: availableStores } = useActiveStores();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -23,35 +25,9 @@ const AddNewStore = () => {
     const [showStoreDropdown, setShowStoreDropdown] = useState(false);
     const [storeSearchTerm, setStoreSearchTerm] = useState("");
 
-    const availableStores = [
-        { locName: "Z-Edapally", locCode: "144" },
-        { locName: "Z-Edappal", locCode: "100" },
-        { locName: "Z-Perinthalmanna", locCode: "133" },
-        { locName: "Z-Kottakkal", locCode: "122" },
-        { locName: "Warehouse", locCode: "858" },
-        { locName: "G-Edappally", locCode: "702" },
-        { locName: "HEAD OFFICE01", locCode: "759" },
-        { locName: "SG-Trivandrum", locCode: "700" },
-        { locName: "G.Kottayam", locCode: "701" },
-        { locName: "G.Perumbavoor", locCode: "703" },
-        { locName: "G.Thrissur", locCode: "704" },
-        { locName: "G.Chavakkad", locCode: "706" },
-        { locName: "G.Calicut", locCode: "712" },
-        { locName: "G.Vadakara", locCode: "708" },
-        { locName: "G.Edappal", locCode: "707" },
-        { locName: "G.Perinthalmanna", locCode: "709" },
-        { locName: "G.Kottakkal", locCode: "711" },
-        { locName: "G.Manjeri", locCode: "710" },
-        { locName: "G.Palakkad", locCode: "705" },
-        { locName: "G.Kalpetta", locCode: "717" },
-        { locName: "G.Kannur", locCode: "716" },
-        { locName: "G.MG Road", locCode: "718" },
-        { locName: "WAREHOUSE", locCode: "103" },
-    ];
-
-    const filteredStores = availableStores.filter(store => 
-        store.locName.toLowerCase().includes(storeSearchTerm.toLowerCase()) &&
-        !allowedLocCodes.includes(store.locCode)
+    const filteredStores = (availableStores || []).filter(store => 
+        (store.locName || "").toLowerCase().includes((storeSearchTerm || "").toLowerCase()) &&
+        !(allowedLocCodes || []).includes(store.locCode)
     );
 
     const handleStoreSelect = (locCode) => {
@@ -75,7 +51,12 @@ const AddNewStore = () => {
         e.preventDefault();
 
         if (!username || !email) {
-            alert("Please fill in all required fields.");
+            alert("Please fill in Store Name and Email.");
+            return;
+        }
+
+        if (!locCode || !locCode.trim()) {
+            alert("Please enter a Location Code (Loc Code) for the store.");
             return;
         }
 
@@ -101,12 +82,12 @@ const AddNewStore = () => {
         }
 
         const payload = {
-            username,
-            email,
-            locCode,
-            address,
-            phone,
-            gst,
+            username: username.trim(),
+            email: email.trim(),
+            locCode: locCode.trim(),
+            address: address || "",
+            phone: phone || "",
+            gst: gst || "",
             power,
             role: role || undefined,
             allowedLocCodes: role === "cluster_manager" ? allowedLocCodes : [],
@@ -127,7 +108,49 @@ const AddNewStore = () => {
             const data = await response.json();
 
             if (response.ok) {
+                const trimmedName = username.trim();
+                const trimmedCode = locCode.trim();
+
+                // 1. Optimistically save to local store cache and broadcast event
+                saveCustomStore({
+                    locName: trimmedName,
+                    locCode: trimmedCode,
+                    name: trimmedName,
+                    address: address || "",
+                    phone: phone || "",
+                    email: email || ""
+                });
+
+                // 2. Also register in Store collection on the backend (dual-create)
+                try {
+                    await fetch(`${baseUrl.baseUrl}api/stores`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            name: trimmedName,
+                            locCode: trimmedCode,
+                            locName: trimmedName,
+                            address: address || "",
+                            phone: phone || "",
+                            email: email || "",
+                            isActive: true
+                        }),
+                    });
+                } catch (storeCreateErr) {
+                    console.warn("Could not dual-create in /api/stores:", storeCreateErr);
+                }
+
+                // 3. Immediately refresh active stores across the application
+                try {
+                    await fetchActiveStores();
+                } catch (storeSyncErr) {
+                    console.error("Failed to refresh active stores:", storeSyncErr);
+                }
+
                 alert(data.message || "Store created successfully!");
+
                 // Reset form
                 setUsername("");
                 setEmail("");

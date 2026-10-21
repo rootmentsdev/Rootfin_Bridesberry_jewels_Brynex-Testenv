@@ -253,29 +253,8 @@ const EditUser = () => {
                                 </label>
                                 <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1">
                                     {[
-                                        { locName: "Z-Edapally1", locCode: "144" },
                                         { locName: "Warehouse", locCode: "858" },
-                                        { locName: "G-Edappally", locCode: "702" },
-                                        { locName: "HEAD OFFICE01", locCode: "759" },
-                                        { locName: "SG-Trivandrum", locCode: "700" },
-                                        { locName: "Z- Edappal", locCode: "100" },
-                                        { locName: "Z.Perinthalmanna", locCode: "133" },
-                                        { locName: "Z.Kottakkal", locCode: "122" },
-                                        { locName: "G.Kottayam", locCode: "701" },
-                                        { locName: "G.Perumbavoor", locCode: "703" },
-                                        { locName: "G.Thrissur", locCode: "704" },
-                                        { locName: "G.Chavakkad", locCode: "706" },
-                                        { locName: "G.Calicut", locCode: "712" },
-                                        { locName: "G.Vadakara", locCode: "708" },
-                                        { locName: "G.Edappal", locCode: "707" },
-                                        { locName: "G.Perinthalmanna", locCode: "709" },
-                                        { locName: "G.Kottakkal", locCode: "711" },
-                                        { locName: "G.Manjeri", locCode: "710" },
-                                        { locName: "G.Palakkad", locCode: "705" },
-                                        { locName: "G.Kalpetta", locCode: "717" },
-                                        { locName: "G.Kannur", locCode: "716" },
-                                        { locName: "G.MG Road", locCode: "718" },
-                                        { locName: "WAREHOUSE", locCode: "103" },
+                                        { locName: "MG Road", locCode: "718" },
                                     ].map(s => (
                                         <label key={s.locCode} className="flex items-center gap-2 cursor-pointer text-sm">
                                             <input

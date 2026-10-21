@@ -7,6 +7,7 @@ import baseUrl from "../api/api";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
 import useSidebar from "../hooks/useSidebar";
 import Header from "../components/Header";
+import { useActiveStores } from "../utils/storeService.js";
 
 // Vendor Credit Number Preferences Modal Component
 const CreditNumberPreferencesModal = ({ isOpen, onClose, onSave, currentPrefix, currentNextNumber, autoGenerate, restartYearly }) => {
@@ -938,8 +939,9 @@ const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
   const isSidebarOpen = useSidebar();
   const navigate = useNavigate();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
+  const { warehouseOptions, branchOptions } = useActiveStores();
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [branch, setBranch] = useState("Head Office");
+  const [branch, setBranch] = useState("Warehouse");
   const [creditNoteNumber, setCreditNoteNumber] = useState("");
   const [creditNoteNumberLoading, setCreditNoteNumberLoading] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
@@ -1861,24 +1863,9 @@ const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
               <div className="space-y-1.5">
                 <Label>Branch</Label>
                 <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
-                  <option value="Head Office">Head Office</option>
-                  <option value="Edapally Branch">Edapally Branch</option>
-                  <option value="Kottayam Branch">Kottayam Branch</option>
-                  <option value="Perumbavoor Branch">Perumbavoor Branch</option>
-                  <option value="Thrissur Branch">Thrissur Branch</option>
-                  <option value="Chavakkad Branch">Chavakkad Branch</option>
-                  <option value="Palakkad Branch">Palakkad Branch</option>
-                  <option value="Perinthalmanna Branch">Perinthalmanna Branch</option>
-                  <option value="Kottakkal Branch">Kottakkal Branch</option>
-                  <option value="Kalpetta Branch">Kalpetta Branch</option>
-                  <option value="Edappal Branch">Edappal Branch</option>
-                  <option value="Kannur Branch">Kannur Branch</option>
-                  <option value="Manjery Branch">Manjery Branch</option>
-                  <option value="Calicut">Calicut</option>
-                  <option value="Warehouse">Warehouse</option>
-                  <option value="Grooms Trivandrum">Grooms Trivandrum</option>
-                  <option value="SuitorGuy MG Road">SuitorGuy MG Road</option>
-                  <option value="Vadakara Branch">Vadakara Branch</option>
+                  {(branchOptions && branchOptions.length > 0 ? branchOptions : ["Warehouse", "MG Road"]).map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
                 </Select>
               </div>
 
@@ -1970,24 +1957,9 @@ const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
                 <Label>Warehouse</Label>
                 <Select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
                   <option value="">Select a warehouse</option>
-                  <option value="Calicut">Calicut</option>
-                  <option value="Chavakkad Branch">Chavakkad Branch</option>
-                  <option value="Edapally Branch">Edapally Branch</option>
-                  <option value="Edappal Branch">Edappal Branch</option>
-                  <option value="Grooms Trivandrum">Grooms Trivandrum</option>
-                  <option value="Head Office">Head Office</option>
-                  <option value="Kalpetta Branch">Kalpetta Branch</option>
-                  <option value="Kannur Branch">Kannur Branch</option>
-                  <option value="Kottakkal Branch">Kottakkal Branch</option>
-                  <option value="Kottayam Branch">Kottayam Branch</option>
-                  <option value="Manjery Branch">Manjery Branch</option>
-                  <option value="Palakkad Branch">Palakkad Branch</option>
-                  <option value="Perinthalmanna Branch">Perinthalmanna Branch</option>
-                  <option value="Perumbavoor Branch">Perumbavoor Branch</option>
-                  <option value="SuitorGuy MG Road">SuitorGuy MG Road</option>
-                  <option value="Thrissur Branch">Thrissur Branch</option>
-                  <option value="Vadakara Branch">Vadakara Branch</option>
-                  <option value="Warehouse">Warehouse</option>
+                  {(warehouseOptions && warehouseOptions.length > 0 ? warehouseOptions : ["Warehouse", "MG Road"]).map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
                 </Select>
               </div>
 
@@ -2343,6 +2315,7 @@ const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
 // Main VendorCredits Component
 const VendorCredits = () => {
   const isSidebarOpen = useSidebar();
+  const { stores: activeStores } = useActiveStores();
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -2378,33 +2351,12 @@ const VendorCredits = () => {
         if (user?.locCode) params.append("locCode", user.locCode);
         
         // Add warehouse parameter for filtering
-        const fallbackLocations = [
-          { "locName": "Z-Edapally1", "locCode": "144" },
-          { "locName": "Warehouse", "locCode": "858" },
-          { "locName": "G-Edappally", "locCode": "702" },
-          { "locName": "HEAD OFFICE01", "locCode": "759" },
-          { "locName": "SG-Trivandrum", "locCode": "700" },
-          { "locName": "Z- Edappal", "locCode": "100" },
-          { "locName": "Z.Perinthalmanna", "locCode": "133" },
-          { "locName": "Z.Kottakkal", "locCode": "122" },
-          { "locName": "G.Kottayam", "locCode": "701" },
-          { "locName": "G.Perumbavoor", "locCode": "703" },
-          { "locName": "G.Thrissur", "locCode": "704" },
-          { "locName": "G.Chavakkad", "locCode": "706" },
-          { "locName": "G.Calicut ", "locCode": "712" },
-          { "locName": "G.Vadakara", "locCode": "708" },
-          { "locName": "G.Edappal", "locCode": "707" },
-          { "locName": "G.Perinthalmanna", "locCode": "709" },
-          { "locName": "G.Kottakkal", "locCode": "711" },
-          { "locName": "G.Manjeri", "locCode": "710" },
-          { "locName": "G.Palakkad ", "locCode": "705" },
-          { "locName": "G.Kalpetta", "locCode": "717" },
-          { "locName": "G.Kannur", "locCode": "716" },
-          { "locName": "G.Mg Road", "locCode": "718" },
-          { "locName": "Production", "locCode": "101" },
-          { "locName": "Office", "locCode": "102" },
-          { "locName": "WAREHOUSE", "locCode": "103" }
-        ];
+        const fallbackLocations = activeStores && activeStores.length > 0
+          ? activeStores
+          : [
+              { "locName": "Warehouse", "locCode": "858" },
+              { "locName": "MG Road", "locCode": "718" }
+            ];
         
         let userLocName = "";
         if (user?.locCode) {
