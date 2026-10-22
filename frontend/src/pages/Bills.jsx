@@ -2382,30 +2382,33 @@ ${storeNameZpl}^FO81,21
       break-after: auto;
     }
     .tag-left {
-      width: 1.5in;
+      width: 1.3in;
       height: 0.43in;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       text-align: center;
-      overflow: hidden;
+      overflow: visible;
       padding: 0;
-      padding-left: 0.22in;
+      padding-left: 0;
+      margin-left: -0.15in;
+      margin-top: -0.05in;
       flex-shrink: 0;
-      gap: 0.01in;
+      gap: 0;
     }
     .tag-right {
-      width: 2in;
+      width: 2.2in;
       height: 0.43in;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       justify-content: flex-start;
       text-align: left;
-      padding-left: 0;
-      margin-left: -0.05in;
-      overflow: hidden;
+      padding-left: 0.02in;
+      margin-top: -0.05in;
+      margin-left: -0.1in;
+      overflow: visible;
       flex-shrink: 0;
       gap: 0.05in;
     }
