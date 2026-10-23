@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import Home from "./pages/Home.jsx";
 import PendingDaybookClosures from "./pages/PendingDaybookClosures.jsx";
 import DayBookInc from "./pages/BillWiseIncome.jsx";
+import RecordExpenses from "./pages/RecordExpenses.jsx";
+import DirectIndirectExpenses from "./pages/DirectIndirectExpenses.jsx";
 import Datewisedaybook from "./pages/Datewisedaybook.jsx";
 import Booking from "./pages/Booking.jsx";
 import DayBook from "./pages/DayBook.jsx";
@@ -180,6 +182,11 @@ const App = () => {
           <Route path="/Income&Expenses" element={currentuser ? <ClusterGuard><SecurityReturn /></ClusterGuard> : <Navigate to="/login" />} />
           <Route path="/income" element={currentuser ? <ClusterGuard><Income /></ClusterGuard> : <Navigate to="/login" />} />
           <Route path="/expenses" element={currentuser ? <ClusterGuard><Expenses /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/record-expense" element={currentuser ? <ClusterGuard><RecordExpenses /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/record-expenses" element={currentuser ? <ClusterGuard><RecordExpenses /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/record-expense/new" element={currentuser ? <ClusterGuard><DirectIndirectExpenses initialType="direct" /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/direct-expenses" element={currentuser ? <ClusterGuard><DirectIndirectExpenses initialType="direct" /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/indirect-expenses" element={currentuser ? <ClusterGuard><DirectIndirectExpenses initialType="indirect" /></ClusterGuard> : <Navigate to="/login" />} />
           <Route path="/CashBankLedger" element={currentuser ? <ClusterGuard><SecurityPending /></ClusterGuard> : <Navigate to="/login" />} />
           <Route path="/securityReport" element={currentuser ? <Security /> : <Navigate to='/login' />} />
           <Route path="/CloseReport" element={currentuser?.power === 'admin' ? <CloseReport /> : <Navigate to='/' />} />
