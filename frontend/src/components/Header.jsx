@@ -3,10 +3,9 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Bell } from "lucide-react";
 import baseUrl from '../api/api';
-import salesInventoryAccessConfig from '../config/salesInventoryAccess.json';
 import { getActiveStores, fetchActiveStores, FALLBACK_STORES } from "../utils/storeService.js";
 
-const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
+const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7001";
 
 // Function to format location names with proper spacing
 const formatLocationName = (name) => {
@@ -221,15 +220,6 @@ const Header = (prop) => {
 
     const displayName = getDisplayName();
 
-    // Check if user has access to Sales and Inventory (beta features)
-    // Show BETA badge only for non-admin test users (not for admin)
-    const userEmail = currentUser?.email?.toLowerCase() || "";
-    const isAdmin = currentUser?.power === 'admin';
-    const isInBetaList = salesInventoryAccessConfig.allowedEmails
-        .map(email => email.toLowerCase())
-        .includes(userEmail);
-    const hasBetaAccess = !isAdmin && isInBetaList; // Only show badge for non-admin beta testers
-
     return (
         <nav className="bg-white border-b border-gray-200 shadow-sm">
             <div className="max-w-full pl-14 md:pl-16 pr-6 py-3.5 flex flex-wrap items-center justify-between mx-auto">
@@ -237,16 +227,6 @@ const Header = (prop) => {
                     {prop.title && (
                         <h1 className="text-xl font-bold text-gray-800">{prop.title}</h1>
                     )}
-                    <a href="#" className="flex items-center space-x-3 rtl:space-x-reverse">
-                        {hasBetaAccess && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md animate-pulse">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                                BETA
-                            </span>
-                        )}
-                    </a>
                 </div>
 
                 <div className="flex items-center gap-4">

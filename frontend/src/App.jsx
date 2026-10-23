@@ -1,5 +1,7 @@
 import { Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import usePreventNumberInputScroll from "./hooks/usePreventNumberInputScroll";
+import LoadingScreen from "./components/LoadingScreen.jsx";
 import Home from "./pages/Home.jsx";
 import PendingDaybookClosures from "./pages/PendingDaybookClosures.jsx";
 import DayBookInc from "./pages/BillWiseIncome.jsx";
@@ -164,6 +166,19 @@ const App = () => {
     };
   }, [navigate, currentuser]);
 
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (initialLoading) {
+    return <LoadingScreen title="ROOTFIN" subtitle="BRYNEX FINANCIAL SOFTWARE" />;
+  }
+
   return (
     <div className="">
       {currentuser && <Nav />} {/* Show Nav only if user is logged in */}
@@ -175,6 +190,7 @@ const App = () => {
           {/* Protected Routes (Redirect to Login if Not Authenticated) */}
           <Route path="/" element={currentuser ? (isClusterManager ? <Navigate to="/datewisedaybook" /> : ((currentuser?.power === 'admin' || currentuser?.role === 'superadmin') ? <Home /> : <DayBookInc />)) : <Navigate to="/login" />} />
           <Route path="/dashboard" element={currentuser ? <Home /> : <Navigate to="/login" />} />
+          <Route path="/daybook" element={currentuser ? <DayBookInc /> : <Navigate to="/login" />} />
           <Route path="/PendingDaybookClosures" element={currentuser?.power === 'admin' || currentuser?.role === 'superadmin' ? <PendingDaybookClosures /> : <Navigate to='/' />} />
           <Route path="/datewisedaybook" element={currentuser ? <Datewisedaybook /> : <Navigate to="/login" />} />
           <Route path="/BookingReport" element={currentuser ? <Booking /> : <Navigate to="/login" />} />

@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import { CalendarIcon, RefreshCw, HandCoins, Banknote, Receipt, Link2, FileText } from 'lucide-react';
 import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import baseUrl from '../api/api.js';
+import { useSidebar } from '../hooks/useSidebar.js';
 
 const STORE_LIST = [
   { locName: "G-Edappal", locCode: "707" },
@@ -26,13 +27,16 @@ const STORE_LIST = [
   { locName: "SG-Trivandrum", locCode: "700" },
   { locName: "Warehouse", locCode: "858" },
   { locName: "WAREHOUSE", locCode: "103" },
+  { locName: "BridesBerry", locCode: "155" },
   { locName: "Z-Edappal", locCode: "100" },
   { locName: "Z-Edapally", locCode: "144" },
   { locName: "Z-Kottakkal", locCode: "122" },
   { locName: "Z-Perinthalmanna", locCode: "133" },
 ];
 
-const Home = ({ isSidebarOpen }) => {
+const Home = ({ isSidebarOpen: propSidebarOpen }) => {
+  const sidebarHookState = useSidebar();
+  const isSidebarOpen = propSidebarOpen !== undefined ? propSidebarOpen : sidebarHookState;
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
