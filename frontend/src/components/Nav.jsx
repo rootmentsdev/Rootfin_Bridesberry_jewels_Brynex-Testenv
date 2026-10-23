@@ -273,12 +273,9 @@ const Nav = () => {
     ].includes(activePath);
 
     const groupButtonClasses = (isOpen, hasActiveChild) => {
-        const shouldHighlight = (isOpen && !hasActiveChild) || (!isOpen && hasActiveChild);
-        return `sidebar-button flex items-center justify-between w-full px-5 py-3 text-[14px] font-medium rounded-full transition-all ${shouldHighlight
+        return `sidebar-button flex items-center justify-between w-full px-5 py-3 text-[14px] font-medium rounded-full transition-all ${hasActiveChild
             ? "bg-[#a855f7] text-white font-semibold shadow-sm"
-            : (isOpen || hasActiveChild)
-                ? "text-white font-semibold"
-                : "text-zinc-400 hover:text-white hover:bg-[#27272a]/60"
+            : "text-zinc-400 hover:text-white hover:bg-[#27272a]/60"
         }`;
     };
 
@@ -355,7 +352,7 @@ const Nav = () => {
                                         <div className="flex w-full items-center gap-3.5">
                                             <LineChart size={18} className="shrink-0" />
                                             <span className="flex-1 text-left whitespace-nowrap truncate">Reports</span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180" : "rotate-0"} ${isReportsActive ? "text-white" : "text-zinc-400 group-hover:text-white"}`} />
                                         </div>
                                     </button>
                                     {isReportsOpen && (
@@ -402,7 +399,7 @@ const Nav = () => {
                                         <div className="flex w-full items-center gap-3.5">
                                             <LineChart size={18} className="shrink-0" />
                                             <span className="flex-1 text-left whitespace-nowrap truncate">Reports</span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180" : "rotate-0"} ${isReportsActive ? "text-white" : "text-zinc-400 group-hover:text-white"}`} />
                                         </div>
                                     </button>
                                     {isReportsOpen && (
@@ -453,7 +450,7 @@ const Nav = () => {
                                             <div className="flex w-full items-center gap-3.5">
                                                 <ShoppingCart size={18} className="shrink-0" />
                                                 <span className="flex-1 text-left whitespace-nowrap truncate">Sales</span>
-                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isSalesOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isSalesOpen ? "rotate-180" : "rotate-0"} ${isSalesActive ? "text-white" : "text-zinc-400 group-hover:text-white"}`} />
                                             </div>
                                         </button>
                                         {isSalesOpen && (
@@ -473,7 +470,7 @@ const Nav = () => {
                                             <div className="flex w-full items-center gap-3.5">
                                                 <Box size={18} className="shrink-0" />
                                                 <span className="flex-1 text-left whitespace-nowrap truncate">Inventory</span>
-                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isInventoryOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isInventoryOpen ? "rotate-180" : "rotate-0"} ${isInventoryActive ? "text-white" : "text-zinc-400 group-hover:text-white"}`} />
                                             </div>
                                         </button>
                                         {isInventoryOpen && (
@@ -493,7 +490,7 @@ const Nav = () => {
                                             <div className="flex w-full items-center gap-3.5">
                                                 <Truck size={18} className="shrink-0" />
                                                 <span className="flex-1 text-left whitespace-nowrap truncate">Purchase</span>
-                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isPurchaseOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isPurchaseOpen ? "rotate-180" : "rotate-0"} ${isPurchaseActive ? "text-white" : "text-zinc-400 group-hover:text-white"}`} />
                                             </div>
                                         </button>
                                         {isPurchaseOpen && (
@@ -512,7 +509,7 @@ const Nav = () => {
                                         <div className="flex w-full items-center gap-3.5">
                                             <LineChart size={18} className="shrink-0" />
                                             <span className="flex-1 text-left whitespace-nowrap truncate">Reports</span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180" : "rotate-0"} ${isReportsActive ? "text-white" : "text-zinc-400 group-hover:text-white"}`} />
                                         </div>
                                     </button>
                                     {isReportsOpen && (
@@ -560,7 +557,7 @@ const Nav = () => {
                                                     <div className="flex w-full items-center gap-3.5">
                                                         <Users size={18} className="shrink-0" />
                                                         <span className="flex-1 text-left whitespace-nowrap truncate">Manage Users</span>
-                                                        <ChevronDown size={16} className={`shrink-0 transition-transform ${isManageUsersOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                                        <ChevronDown size={16} className={`shrink-0 transition-transform ${isManageUsersOpen ? "rotate-180" : "rotate-0"} ${isManageUsersActive ? "text-white" : "text-zinc-400 group-hover:text-white"}`} />
                                                     </div>
                                                 </button>
                                                 {isManageUsersOpen && (
