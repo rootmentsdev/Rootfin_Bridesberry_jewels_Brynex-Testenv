@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
-import usePreventNumberInputScroll from "./hooks/usePreventNumberInputScroll";
+import Home from "./pages/Home.jsx";
+import PendingDaybookClosures from "./pages/PendingDaybookClosures.jsx";
 import DayBookInc from "./pages/BillWiseIncome.jsx";
 import Datewisedaybook from "./pages/Datewisedaybook.jsx";
 import Booking from "./pages/Booking.jsx";
@@ -170,7 +171,9 @@ const App = () => {
           <Route path="/login" element={!currentuser ? <Login /> : <Navigate to="/" />} />
 
           {/* Protected Routes (Redirect to Login if Not Authenticated) */}
-          <Route path="/" element={currentuser ? (isClusterManager ? <Navigate to="/datewisedaybook" /> : <DayBookInc />) : <Navigate to="/login" />} />
+          <Route path="/" element={currentuser ? (isClusterManager ? <Navigate to="/datewisedaybook" /> : ((currentuser?.power === 'admin' || currentuser?.role === 'superadmin') ? <Home /> : <DayBookInc />)) : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={currentuser ? <Home /> : <Navigate to="/login" />} />
+          <Route path="/PendingDaybookClosures" element={currentuser?.power === 'admin' || currentuser?.role === 'superadmin' ? <PendingDaybookClosures /> : <Navigate to='/' />} />
           <Route path="/datewisedaybook" element={currentuser ? <Datewisedaybook /> : <Navigate to="/login" />} />
           <Route path="/BookingReport" element={currentuser ? <Booking /> : <Navigate to="/login" />} />
           <Route path="/RentOutReport" element={currentuser ? <DayBook /> : <Navigate to="/login" />} />

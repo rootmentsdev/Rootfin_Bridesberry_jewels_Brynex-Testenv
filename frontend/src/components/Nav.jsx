@@ -262,6 +262,14 @@ const Nav = () => {
                         </>
                     ) : (
                         <>
+                            {/* Dashboard - Only for Admin / Super Admin */}
+                            {(isAdmin || currentuser?.role === 'superadmin') && (
+                                <Link to="/dashboard" className={singleLinkClasses("/dashboard")}>
+                                    <LineChart size={16} />
+                                    <span>Dashboard</span>
+                                </Link>
+                            )}
+
                             {/* Day Book - Standalone */}
                             <Link to="/" className={singleLinkClasses("/")}>
                                 <FileText size={16} />
@@ -374,6 +382,10 @@ const Nav = () => {
                                         <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}><FolderClosed size={16} /><span>Close Report</span></Link>
                                     )}
                                     <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}><Notebook size={16} /><span>Admin Close</span></Link>
+                                    
+                                    {(currentuser.power === 'admin' || currentuser.role === 'superadmin') && (
+                                        <Link to="/PendingDaybookClosures" className={singleLinkClasses("/PendingDaybookClosures")}><Notebook size={16} /><span>Late Closures</span></Link>
+                                    )}
                                     
                                     {/* Manage Users — admin only */}
                                     {currentuser.power === 'admin' && (

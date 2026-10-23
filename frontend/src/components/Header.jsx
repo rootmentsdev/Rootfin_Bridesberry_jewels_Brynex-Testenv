@@ -1,6 +1,7 @@
 import { IoPersonCircleOutline } from "react-icons/io5";
-import Rootments from '../assets/Rootments.jpg';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import { Bell } from "lucide-react";
 import baseUrl from '../api/api';
 import salesInventoryAccessConfig from '../config/salesInventoryAccess.json';
 import { getActiveStores, fetchActiveStores, FALLBACK_STORES } from "../utils/storeService.js";
@@ -37,6 +38,9 @@ const Header = (prop) => {
 
     const [logOut, setlogOut] = useState(false);
     const [selectedValue, setSelectedValue] = useState("");
+    const [pendingClosuresCount, setPendingClosuresCount] = useState(0);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const notificationRef = useRef(null);
     
     // Initialize currentUser from localStorage immediately to prevent blank display
     const getInitialUser = () => {
@@ -109,6 +113,39 @@ const Header = (prop) => {
 
         window.addEventListener("rootfin-stores-updated", handleStoresUpdated);
         return () => window.removeEventListener("rootfin-stores-updated", handleStoresUpdated);
+    }, []);
+
+    // Fetch pending closures count for admins
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            const user = getInitialUser();
+            if (user?.power === 'admin' || user?.role === 'superadmin') {
+                try {
+                    const res = await fetch(`${API_URL}/user/pendingClosures`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setPendingClosuresCount(data.data?.length || 0);
+                    }
+                } catch (e) {
+                    console.error("Error fetching pending closures", e);
+                }
+            }
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000); // Check every 30s
+        return () => clearInterval(interval);
+    }, []);
+
+    // Close notifications on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+                setIsNotificationOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     // Additional useEffect to periodically sync user from localStorage
@@ -212,16 +249,65 @@ const Header = (prop) => {
                     </a>
                 </div>
 
-                <div
-                    onClick={() => setlogOut((prev) => !prev)}
-                    className="hidden cursor-pointer w-full md:block md:w-auto"
-                    id="navbar-multi-level"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <p className="text-xs text-gray-500">Location: {formatLocationName(displayName)}</p>
+                <div className="flex items-center gap-4">
+                    {/* Notification bell for admin */}
+                    {(currentUser.power === 'admin' || currentUser.role === 'superadmin') && (
+                        <div className="relative" ref={notificationRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                                className="relative p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                                <Bell size={20} />
+                                {pendingClosuresCount > 0 && (
+                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/4 -translate-y-1/4">
+                                        {pendingClosuresCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {isNotificationOpen && (
+                                <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                                        <h3 className="text-sm font-semibold text-gray-800">Pending Requests</h3>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto">
+                                        {pendingClosuresCount > 0 ? (
+                                            <Link 
+                                                to="/PendingDaybookClosures" 
+                                                onClick={() => setIsNotificationOpen(false)}
+                                                className="block px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-50"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-800">Late Daybook Closures</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">Require super admin approval</p>
+                                                    </div>
+                                                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">{pendingClosuresCount}</span>
+                                                </div>
+                                            </Link>
+                                        ) : (
+                                            <div className="px-4 py-6 text-center text-sm text-gray-500">
+                                                No pending requests.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <IoPersonCircleOutline className="text-4xl text-green-600" />
+                    )}
+
+                    <div
+                        onClick={() => setlogOut((prev) => !prev)}
+                        className="hidden cursor-pointer w-full md:block md:w-auto"
+                        id="navbar-multi-level"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500">Location: {formatLocationName(displayName)}</p>
+                            </div>
+                            <IoPersonCircleOutline className="text-4xl text-green-600" />
+                        </div>
                     </div>
                 </div>
             </div>
