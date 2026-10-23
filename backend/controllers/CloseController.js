@@ -14,7 +14,7 @@ export const CloseController = async (req, res) => {
         // - Closecash field = physical cash count (totalAmount) = 20600
         //
         // The mapping is correct - totalCash → cash, totalAmount → Closecash
-        const { totalBankAmount: bank, totalAmount: Closecash, locCode, date, totalCash: cash, email } = req.body;
+        const { totalBankAmount: bank, totalAmount: Closecash, locCode, date, totalCash: cash, email, status } = req.body;
         
         console.log("💰 Saving close data:", {
             receivedTotalCash: req.body.totalCash,
@@ -63,6 +63,7 @@ export const CloseController = async (req, res) => {
             existingClose.cash = cash;
             existingClose.Closecash = Closecash;
             existingClose.email = email;
+            if (status) existingClose.status = status;
 
             await existingClose.save();
 
@@ -83,7 +84,8 @@ export const CloseController = async (req, res) => {
                 cash,
                 locCode,
                 date: formattedDate,
-                email
+                email,
+                status: status || "closed"
             });
 
             await CloseCashBank.save();
@@ -354,5 +356,29 @@ export const getFinancialSummaryWithEdit = async (req, res) => {
             message: "Internal server Error",
             error: error.message
         });
+    }
+};
+
+export const GetPendingClosures = async (req, res) => {
+    try {
+        const pendingClosures = await CloseTransaction.find({ status: "pending_approval" }).sort({ date: -1 });
+        return res.status(200).json({ data: pendingClosures });
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching pending closures", error: error.message });
+    }
+};
+
+export const ApproveClosure = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const closure = await CloseTransaction.findById(id);
+        if (!closure) return res.status(404).json({ message: "Closure not found" });
+        
+        closure.status = "closed";
+        await closure.save();
+        
+        return res.status(200).json({ message: "Closure approved successfully", data: closure });
+    } catch (error) {
+        return res.status(500).json({ message: "Error approving closure", error: error.message });
     }
 };
