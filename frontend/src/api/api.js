@@ -16,10 +16,10 @@
 const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 const baseUrl = {
-     baseUrl: isLocalhost ? 'http://localhost:7000/' : 'https://jewels.brynexapparels.innn/',
+     baseUrl: isLocalhost ? 'http://localhost:7000/' : 'https://brynexjewels.onrender.com/',
 }
 export default baseUrl
 
 
 // http://localhost:7000/   
-// https://jewels.brynexapparels.in/
+// https://brynexjewels.onrender.com/

@@ -6,7 +6,6 @@ import Head from "../components/Head";
 import baseUrl from "../api/api";
 import { mapLocNameToWarehouse } from "../utils/warehouseMapping";
 import useSidebar from "../hooks/useSidebar";
-import { useActiveStores } from "../utils/storeService.js";
 
 const TransferOrderView = () => {
   const isSidebarOpen = useSidebar();
@@ -25,13 +24,34 @@ const TransferOrderView = () => {
   const isWarehouseUser = user?.power === "warehouse";
   
   // Fallback locations mapping
-  const { stores: activeStores } = useActiveStores();
-  const fallbackLocations = activeStores && activeStores.length > 0
-    ? activeStores
-    : [
-        { "locName": "Warehouse", "locCode": "858" },
-        { "locName": "MG Road", "locCode": "718" }
-      ];
+  const fallbackLocations = [
+    { "locName": "Z-Edapally1", "locCode": "144" },
+    { "locName": "Warehouse", "locCode": "858" },
+    { "locName": "Brides Berry", "locCode": "155" },
+    { "locName": "G-Edappally", "locCode": "702" },
+    { "locName": "HEAD OFFICE01", "locCode": "759" },
+    { "locName": "SG-Trivandrum", "locCode": "700" },
+    { "locName": "Z- Edappal", "locCode": "100" },
+    { "locName": "Z.Perinthalmanna", "locCode": "133" },
+    { "locName": "Z.Kottakkal", "locCode": "122" },
+    { "locName": "G.Kottayam", "locCode": "701" },
+    { "locName": "G.Perumbavoor", "locCode": "703" },
+    { "locName": "G.Thrissur", "locCode": "704" },
+    { "locName": "G.Chavakkad", "locCode": "706" },
+    { "locName": "G.Calicut ", "locCode": "712" },
+    { "locName": "G.Vadakara", "locCode": "708" },
+    { "locName": "G.Edappal", "locCode": "707" },
+    { "locName": "G.Perinthalmanna", "locCode": "709" },
+    { "locName": "G.Kottakkal", "locCode": "711" },
+    { "locName": "G.Manjeri", "locCode": "710" },
+    { "locName": "G.Palakkad ", "locCode": "705" },
+    { "locName": "G.Kalpetta", "locCode": "717" },
+    { "locName": "G.Kannur", "locCode": "716" },
+    { "locName": "G.Mg Road", "locCode": "718" },
+    { "locName": "Production", "locCode": "101" },
+    { "locName": "Office", "locCode": "102" },
+    { "locName": "WAREHOUSE", "locCode": "103" }
+  ];
   
   // Get location name - prioritize locCode lookup over username
   let userLocName = "";
@@ -59,6 +79,7 @@ const TransferOrderView = () => {
 
     if (orderWarehouseLower === targetWarehouseLower) return true;
     if (orderBase && targetBase && orderBase === targetBase) return true;
+    if (orderWarehouseLower.replace(/[\s\-_.]+/g, '') === targetWarehouseLower.replace(/[\s\-_.]+/g, '')) return true;
     if (orderWarehouseLower.includes(targetWarehouseLower) || targetWarehouseLower.includes(orderWarehouseLower)) return true;
     return false;
   };
@@ -521,29 +542,37 @@ const TransferOrderView = () => {
         const successful = data.stockUpdates.filter(u => u.status === "success");
         const failed = data.stockUpdates.filter(u => u.status !== "success");
         
-        let message = "Transfer order received successfully!\n\n";
-        message += `Stock updated in ${transferOrder.destinationWarehouse}:\n\n`;
-        successful.forEach(update => {
-          const stockBefore = update.stockBefore !== undefined ? update.stockBefore : null;
-          const stockAfter = update.stockAfter !== undefined ? update.stockAfter : null;
-          const received = update.quantity || 0;
-          
-          if (stockBefore !== null && stockAfter !== null && stockBefore !== undefined && stockAfter !== undefined) {
-            message += `✅ ${update.itemName}:\n`;
-            message += `   Previous stock: ${stockBefore}\n`;
-            message += `   Received: +${received}\n`;
-            message += `   New total: ${stockAfter}\n\n`;
-          } else {
-            message += `✅ ${update.itemName}: +${received} units\n`;
-          }
-        });
+        let message = `Transfer order received successfully!\n\n${successful.length} items updated in ${transferOrder.destinationWarehouse}:\n\n`;
+        
+        // Show individual breakdown if <= 5 items, or summary for large orders (e.g. 150 items)
+        if (successful.length <= 5) {
+          successful.forEach(update => {
+            const stockBefore = update.stockBefore !== undefined ? update.stockBefore : null;
+            const stockAfter = update.stockAfter !== undefined ? update.stockAfter : null;
+            const received = update.quantity || 0;
+            
+            if (stockBefore !== null && stockAfter !== null && stockBefore !== undefined && stockAfter !== undefined) {
+              message += `✅ ${update.itemName}:\n`;
+              message += `   Previous stock: ${stockBefore}\n`;
+              message += `   Received: +${received}\n`;
+              message += `   New total: ${stockAfter}\n\n`;
+            } else {
+              message += `✅ ${update.itemName}: +${received} units\n`;
+            }
+          });
+        } else {
+          message += `✅ Total ${successful.length} products added to stock.\n`;
+        }
         
         if (failed.length > 0) {
-          message += `\n⚠️ Failed to update:\n`;
-          failed.forEach(update => {
+          message += `\n⚠️ Failed to update (${failed.length} items):\n`;
+          failed.slice(0, 5).forEach(update => {
             const errorMsg = update.error || update.message || "Unknown error";
             message += `❌ ${update.itemName}: ${errorMsg}\n`;
           });
+          if (failed.length > 5) {
+            message += `...and ${failed.length - 5} more items.\n`;
+          }
         }
         
         message += `\n📦 Items are now available in your Items page.`;
@@ -574,6 +603,29 @@ const TransferOrderView = () => {
       }));
     } catch (error) {
       console.error("Error receiving transfer order:", error);
+      
+      // Fallback check: if network timed out or failed to fetch, check if the server completed it
+      try {
+        const checkResponse = await fetch(`${API_URL}/api/inventory/transfer-orders/${id}`);
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          if (checkData.status === "transferred") {
+            setTransferOrder(checkData);
+            if (showScanner) {
+              await stopScanner();
+            }
+            resetScannedItems();
+            window.dispatchEvent(new CustomEvent('transferOrderReceived', { 
+              detail: { destinationWarehouse: checkData.destinationWarehouse } 
+            }));
+            alert(`Transfer order was received and updated successfully on the server!\n\n📦 Items are now available in ${checkData.destinationWarehouse}.`);
+            return;
+          }
+        }
+      } catch (checkErr) {
+        console.warn("Fallback order status check failed:", checkErr);
+      }
+      
       alert(`Failed to receive transfer order: ${error.message}`);
     } finally {
       setReceiving(false);
