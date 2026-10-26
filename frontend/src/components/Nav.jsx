@@ -56,11 +56,8 @@ const Nav = () => {
     const currentuser = JSON.parse(localStorage.getItem("rootfinuser")) || {};
 
     const userEmail = currentuser?.email?.toLowerCase() || "";
+    const userLocCode = (currentuser?.locCode || currentuser?.locationCode || "").toString().trim();
     const isAdmin = currentuser?.power === 'admin';
-<<<<<<< HEAD
-    const isClusterManager = (currentuser?.role || "").toLowerCase() === "cluster_manager";
-    const isInAllowedList = salesInventoryAccessConfig.allowedEmails
-=======
     const isSuperAdmin = (currentuser?.role || "").toLowerCase() === "superadmin";
     const isAdminOrSuperAdmin = isAdmin || isSuperAdmin;
     const isClusterManager = (currentuser?.role || "").toLowerCase() === "cluster_manager";
@@ -69,7 +66,6 @@ const Nav = () => {
     const isBridesBerry = userLocCode === '155' || userEmail.includes('bridesberry') || (currentuser?.username || "").toLowerCase().includes('bridesberry');
 
     const isInAllowedList = (salesInventoryAccessConfig?.allowedEmails || [])
->>>>>>> e43d9f8 (feat: align login UI, favicon, logo assets, remove BETA badge and update API port)
         .map(email => email.toLowerCase())
         .includes(userEmail);
     const hasSalesInventoryAccess = isAdmin || isInAllowedList;
@@ -244,17 +240,10 @@ const Nav = () => {
         { to: "/sales/returns", label: "Invoice Return", Icon: RotateCcw }
     ];
     const isInventoryActive = inventoryLinks.some((link) => link.to === activePath) ||
-<<<<<<< HEAD
-                               activePath.startsWith("/shoe-sales/items") ||
-                               (currentuser.power === 'admin' || currentuser.power === 'warehouse') && activePath.startsWith("/shoe-sales/item-groups") ||
-                               (currentuser.power === 'admin' || currentuser.power === 'warehouse') && activePath.startsWith("/shoe-sales/inactive") ||
-                               activePath.startsWith("/inventory/store-orders");
-=======
         activePath.startsWith("/shoe-sales/items") ||
         ((currentuser?.power === 'admin' || currentuser?.power === 'warehouse' || isBridesBerry) && activePath.startsWith("/shoe-sales/item-groups")) ||
         ((currentuser?.power === 'admin' || currentuser?.power === 'warehouse' || isBridesBerry) && activePath.startsWith("/shoe-sales/inactive")) ||
         activePath.startsWith("/inventory/store-orders");
->>>>>>> e43d9f8 (feat: align login UI, favicon, logo assets, remove BETA badge and update API port)
     const isSalesActive = salesLinks.some((link) => link.to === activePath);
     const purchaseLinks = [
         { to: "/purchase/orders", label: "Purchase Orders", Icon: ClipboardList },
