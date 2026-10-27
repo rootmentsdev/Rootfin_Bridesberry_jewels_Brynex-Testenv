@@ -9,85 +9,85 @@ const WAREHOUSE_NAME_MAPPING = {
   "Grooms Trivandum": "Grooms Trivandrum",
   "Grooms Trivandrum": "Grooms Trivandrum",
   "SG-Trivandrum": "Grooms Trivandrum",
-  
+
   // Palakkad variations
   "G.Palakkad": "Palakkad Branch",
   "G.Palakkad ": "Palakkad Branch",
   "GPalakkad": "Palakkad Branch",
   "Palakkad Branch": "Palakkad Branch",
-  
+
   // Warehouse variations
   "Warehouse": "Warehouse",
   "warehouse": "Warehouse",
   "WAREHOUSE": "Warehouse",
-  
+
   // Calicut variations
   "G.Calicut": "Calicut",
   "G.Calicut ": "Calicut",
   "GCalicut": "Calicut",
   "Calicut": "Calicut",
-  
+
   // Manjeri/Manjery variations
   "G.Manjeri": "Manjery Branch",
   "G.Manjery": "Manjery Branch",
   "GManjeri": "Manjery Branch",
   "GManjery": "Manjery Branch",
   "Manjery Branch": "Manjery Branch",
-  
+
   // Kannur variations
   "G.Kannur": "Kannur Branch",
   "GKannur": "Kannur Branch",
   "Kannur Branch": "Kannur Branch",
-  
+
   // Edappal variations
   "G.Edappal": "Edappal Branch",
   "GEdappal": "Edappal Branch",
   "Edappal Branch": "Edappal Branch",
-  
+
   // Edapally variations
   "G.Edappally": "Edapally Branch",
   "G-Edappally": "Edapally Branch",
   "GEdappally": "Edapally Branch",
   "GEdapally": "Edapally Branch",  // Single 'p' variation
   "Edapally Branch": "Edapally Branch",
-  
+
   // Kalpetta variations
   "G.Kalpetta": "Kalpetta Branch",
   "GKalpetta": "Kalpetta Branch",
   "Kalpetta Branch": "Kalpetta Branch",
-  
+
   // Kottakkal variations
   "G.Kottakkal": "Kottakkal Branch",
   "GKottakkal": "Kottakkal Branch",
   "Kottakkal Branch": "Kottakkal Branch",
   "Z.Kottakkal": "Kottakkal Branch",
-  
+
   // Perinthalmanna variations
   "G.Perinthalmanna": "Perinthalmanna Branch",
   "GPerinthalmanna": "Perinthalmanna Branch",
   "Perinthalmanna Branch": "Perinthalmanna Branch",
   "Z.Perinthalmanna": "Perinthalmanna Branch",
-  
+
   // Chavakkad variations
   "G.Chavakkad": "Chavakkad Branch",
   "GChavakkad": "Chavakkad Branch",
   "Chavakkad Branch": "Chavakkad Branch",
-  
+
   // Thrissur variations
   "G.Thrissur": "Thrissur Branch",
   "GThrissur": "Thrissur Branch",
   "Thrissur Branch": "Thrissur Branch",
-  
+
   // Perumbavoor variations
   "G.Perumbavoor": "Perumbavoor Branch",
   "GPerumbavoor": "Perumbavoor Branch",
   "Perumbavoor Branch": "Perumbavoor Branch",
-  
+
   // Kottayam variations
   "G.Kottayam": "Kottayam Branch",
   "GKottayam": "Kottayam Branch",
   "Kottayam Branch": "Kottayam Branch",
-  
+
   // MG Road variations
   "G.MG Road": "SuitorGuy MG Road",
   "G.Mg Road": "SuitorGuy MG Road",
@@ -99,11 +99,11 @@ const WAREHOUSE_NAME_MAPPING = {
   "Mg Road Branch": "SuitorGuy MG Road",
   "G Road Branch": "SuitorGuy MG Road",
   "SuitorGuy MG Road": "SuitorGuy MG Road",
-  
+
   // Head Office variations
   "HEAD OFFICE01": "Head Office",
   "Head Office": "Head Office",
-  
+
   // Other locations (default to Warehouse)
   "Z-Edapally1": "Warehouse",
   "Z- Edappal": "Warehouse",
@@ -115,14 +115,14 @@ const WAREHOUSE_NAME_MAPPING = {
 // Normalize warehouse name to standard format
 const normalizeWarehouseName = (warehouseName) => {
   if (!warehouseName) return null;
-  
+
   const trimmed = warehouseName.toString().trim();
-  
+
   // Check direct mapping
   if (WAREHOUSE_NAME_MAPPING[trimmed]) {
     return WAREHOUSE_NAME_MAPPING[trimmed];
   }
-  
+
   // Check case-insensitive mapping
   const lowerName = trimmed.toLowerCase();
   for (const [key, value] of Object.entries(WAREHOUSE_NAME_MAPPING)) {
@@ -130,7 +130,7 @@ const normalizeWarehouseName = (warehouseName) => {
       return value;
     }
   }
-  
+
   // If no mapping found, return original (trimmed)
   return trimmed;
 };
@@ -187,12 +187,12 @@ const generateUniqueSku = async (name = "") => {
 // Helper function to generate change details
 const generateChangeDetails = (oldItem, newItem, changeType) => {
   const changes = [];
-  
+
   if (changeType === "STOCK_UPDATE") {
     // Check for warehouse stock changes
     const oldStocks = oldItem?.warehouseStocks || [];
     const newStocks = newItem?.warehouseStocks || [];
-    
+
     // Compare warehouse stocks
     newStocks.forEach(newStock => {
       const oldStock = oldStocks.find(s => s.warehouse === newStock.warehouse);
@@ -207,14 +207,14 @@ const generateChangeDetails = (oldItem, newItem, changeType) => {
         changes.push(`Added stock for ${newStock.warehouse}: ${newStock.openingStock || 0}`);
       }
     });
-    
+
     // Check for removed stocks
     oldStocks.forEach(oldStock => {
       if (!newStocks.find(s => s.warehouse === oldStock.warehouse)) {
         changes.push(`Removed stock for ${oldStock.warehouse}`);
       }
     });
-    
+
     // Check for general stock changes
     if (oldItem?.stock !== newItem?.stock) {
       changes.push(`Initial stock changed from ${oldItem?.stock || 0} to ${newItem?.stock || 0}`);
@@ -234,11 +234,11 @@ const generateChangeDetails = (oldItem, newItem, changeType) => {
       }
     });
   }
-  
+
   if (changes.length === 0) {
     return "updated";
   }
-  
+
   return `updated. ${changes.join(", ")}`;
 };
 
@@ -272,11 +272,11 @@ export const createShoeItem = async (req, res) => {
 
     // Get user information for createdBy and changedBy
     const changedBy = req.body.changedBy || req.body.createdBy || req.headers['x-user-name'] || "System";
-    
+
     // Get user's warehouse from request (passed from frontend)
     const userWarehouse = req.body.userWarehouse || req.headers['x-user-warehouse'] || null;
     const userLocName = req.body.userLocName || req.headers['x-user-locname'] || null;
-    
+
     // Determine warehouse - use provided warehouse or map from locName
     let targetWarehouse = userWarehouse;
     if (!targetWarehouse && userLocName) {
@@ -286,7 +286,7 @@ export const createShoeItem = async (req, res) => {
     if (!targetWarehouse) {
       targetWarehouse = "Warehouse";
     }
-    
+
     // Initialize warehouseStocks with the user's warehouse
     // If warehouseStocks are provided, use them; otherwise initialize with user's warehouse
     let warehouseStocks = req.body.warehouseStocks || [];
@@ -311,10 +311,10 @@ export const createShoeItem = async (req, res) => {
         const wsWarehouse = (ws.warehouse || "").toString().toLowerCase().trim();
         const targetWarehouseLower = targetWarehouse.toLowerCase().trim();
         return wsWarehouse === targetWarehouseLower ||
-               wsWarehouse.includes(targetWarehouseLower) ||
-               targetWarehouseLower.includes(wsWarehouse);
+          wsWarehouse.includes(targetWarehouseLower) ||
+          targetWarehouseLower.includes(wsWarehouse);
       });
-      
+
       if (!hasUserWarehouse) {
         // Add user's warehouse entry
         const initialStock = req.body.stock || req.body.openingStock || 0;
@@ -332,7 +332,7 @@ export const createShoeItem = async (req, res) => {
         });
       }
     }
-    
+
     const payload = {
       ...req.body,
       itemName: req.body.itemName.trim(),
@@ -344,7 +344,7 @@ export const createShoeItem = async (req, res) => {
     };
 
     const item = await ShoeItem.create(payload);
-    
+
     // Log history for item creation
     try {
       const historyEntry = {
@@ -362,7 +362,7 @@ export const createShoeItem = async (req, res) => {
     } catch (historyError) {
       console.error("Error creating history:", historyError);
     }
-    
+
     return res.status(201).json(item);
   } catch (error) {
     console.error("Error creating shoe item:", error);
@@ -373,32 +373,32 @@ export const createShoeItem = async (req, res) => {
 // Helper function to match warehouse names accurately
 const matchesWarehouse = (itemWarehouse, targetWarehouse) => {
   if (!itemWarehouse || !targetWarehouse) return false;
-  
+
   // Normalize both warehouse names
   const normalizedItem = normalizeWarehouseName(itemWarehouse);
   const normalizedTarget = normalizeWarehouseName(targetWarehouse);
-  
+
   // Exact match after normalization
   if (normalizedItem && normalizedTarget && normalizedItem.toLowerCase() === normalizedTarget.toLowerCase()) {
     return true;
   }
-  
+
   const itemWarehouseLower = itemWarehouse.toString().toLowerCase().trim();
   const targetWarehouseLower = targetWarehouse.toLowerCase().trim();
-  
+
   // Exact match
   if (itemWarehouseLower === targetWarehouseLower) {
     return true;
   }
-  
+
   // Base name match (e.g., "warehouse" matches "Warehouse", "kannur" matches "Kannur Branch")
   const itemBase = itemWarehouseLower.replace(/\s*(branch|warehouse)\s*$/i, "").trim();
   const targetBase = targetWarehouseLower.replace(/\s*(branch|warehouse)\s*$/i, "").trim();
-  
+
   if (itemBase && targetBase && itemBase === targetBase) {
     return true;
   }
-  
+
   // Special handling for Trivandrum variations
   const trivandrumVariations = ["trivandrum", "grooms trivandrum", "sg-trivandrum", "trivandrum branch"];
   const stockIsTrivandrum = trivandrumVariations.some(v => itemWarehouseLower.includes(v));
@@ -411,7 +411,7 @@ const matchesWarehouse = (itemWarehouse, targetWarehouse) => {
   if (itemWarehouseLower.includes(targetWarehouseLower) || targetWarehouseLower.includes(itemWarehouseLower)) {
     return true;
   }
-  
+
   return false;
 };
 
@@ -423,18 +423,18 @@ const itemBelongsToWarehouse = (warehouseStocks, targetWarehouse) => {
   if (!targetWarehouse) {
     return true; // If no warehouse specified (admin), show all items
   }
-  
+
   // Normalize target warehouse name
   const normalizedTarget = normalizeWarehouseName(targetWarehouse);
   const targetWarehouseLower = (normalizedTarget || targetWarehouse).toLowerCase().trim();
   const isTargetWarehouse = targetWarehouseLower === "warehouse";
-  
+
   return warehouseStocks.some(stock => {
     const stockWarehouseRaw = (stock.warehouse || "").toString().trim();
     // Normalize stock warehouse name
     const normalizedStock = normalizeWarehouseName(stockWarehouseRaw);
     const stockWarehouse = (normalizedStock || stockWarehouseRaw).toLowerCase().trim();
-    
+
     // For "Warehouse" - only match exactly "warehouse"
     if (isTargetWarehouse) {
       if (stockWarehouse !== "warehouse") {
@@ -445,23 +445,23 @@ const itemBelongsToWarehouse = (warehouseStocks, targetWarehouse) => {
       if (stockWarehouse === "warehouse") {
         return false; // Store users should NOT see items with stock only in "Warehouse"
       }
-      
+
       // Check exact match first (most strict) - after normalization
       if (stockWarehouse === targetWarehouseLower) {
         // Exact match - show item regardless of stock level
         return true;
       }
-      
+
       // Check if warehouse name contains the store name (e.g., "kannur branch" contains "kannur")
       // Extract the base name (remove "branch", "warehouse", etc.)
       const stockBase = stockWarehouse.replace(/\s*(branch|warehouse)\s*$/i, "").trim();
       const targetBase = targetWarehouseLower.replace(/\s*(branch|warehouse)\s*$/i, "").trim();
-      
+
       if (stockBase && targetBase && stockBase === targetBase) {
         // Base names match - show item regardless of stock level
         return true;
       }
-      
+
       // Special handling for Trivandrum variations
       const trivandrumVariations = ["trivandrum", "grooms trivandrum", "sg-trivandrum", "trivandrum branch"];
       const stockIsTrivandrum = trivandrumVariations.some(v => stockWarehouse.includes(v));
@@ -470,10 +470,10 @@ const itemBelongsToWarehouse = (warehouseStocks, targetWarehouse) => {
         // Both are Trivandrum variations - show item regardless of stock level
         return true;
       }
-      
+
       return false;
     }
-    
+
     // For "Warehouse" - show item regardless of stock level
     return true;
   });
@@ -487,25 +487,25 @@ export const getShoeItems = async (req, res) => {
     const requestedLimit = parseInt(req.query.limit) || 20;
     const limit = Math.min(requestedLimit, 10000); // Cap at 10000 for safety
     const skip = (page - 1) * limit;
-    
+
     // Get warehouse filter from query (for store users)
     let userWarehouse = req.query.warehouse || null;
     const userPower = req.query.userPower || "";
     const userLocCode = req.query.locCode || "";
-    
+
     // User is admin if: power === 'admin' OR locCode === '858' (Warehouse) OR email in adminEmails
     const userId = req.query.userId || "";
     const adminEmails = ['officerootments@gmail.com', 'brynex@gmail.com'];
     const isAdminEmail = userId && typeof userId === 'string' && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
-    const isAdmin = req.query.isAdmin === "true" || req.query.isAdmin === true || 
-                    isAdminEmail ||
-                    (userPower && (userPower.toLowerCase() === 'admin' || userPower.toLowerCase() === 'super_admin')) ||
-                    (userLocCode && (userLocCode === '858' || userLocCode === '103')); // 858 = Warehouse, 103 = WAREHOUSE
-    
+    const isAdmin = req.query.isAdmin === "true" || req.query.isAdmin === true ||
+      isAdminEmail ||
+      (userPower && (userPower.toLowerCase() === 'admin' || userPower.toLowerCase() === 'super_admin')) ||
+      (userLocCode && (userLocCode === '858' || userLocCode === '103')); // 858 = Warehouse, 103 = WAREHOUSE
+
     // If admin has switched to a specific store (not Warehouse), filter by that store
     const isAdminViewingSpecificStore = isAdmin && userWarehouse && userWarehouse !== "Warehouse";
     const shouldFilterByWarehouse = !isAdmin || isAdminViewingSpecificStore;
-    
+
     console.log(`\n=== GET SHOE ITEMS REQUEST ===`);
     console.log(`Query params:`, req.query);
     console.log(`User warehouse: "${userWarehouse}"`);
@@ -515,13 +515,13 @@ export const getShoeItems = async (req, res) => {
     console.log(`Is admin viewing specific store: ${isAdminViewingSpecificStore}`);
     console.log(`Should filter by warehouse: ${shouldFilterByWarehouse}`);
     console.log(`==============================\n`);
-    
+
     // Fast lean queries excluding heavy image data
     const [standaloneItems, itemGroups] = await Promise.all([
       ShoeItem.find().select("-images").sort({ createdAt: -1 }).lean(),
       ItemGroup.find({ isActive: { $ne: false } }).select("-images").sort({ createdAt: -1 }).lean(),
     ]);
-    
+
     // Flatten items from groups and convert to standalone item format
     const groupItems = [];
     const groupSkuSet = new Set();
@@ -568,6 +568,8 @@ export const getShoeItems = async (req, res) => {
             size: resolvedSize,
             costPrice: item.costPrice || 0,
             sellingPrice: item.sellingPrice || 0,
+            mrp: item.mrp !== undefined && item.mrp !== null && item.mrp !== "" ? item.mrp : (item.sellingPrice || 0),
+            itemCode: item.itemCode || group.itemCode || "",
             upc: item.upc || "",
             hsnCode: item.hsnCode || "",
             isbn: item.isbn || "",
@@ -600,7 +602,7 @@ export const getShoeItems = async (req, res) => {
         });
       }
     });
-    
+
     // Deduplicate: exclude standalone items that duplicate any item inside a group (by SKU)
     const validStandaloneItems = standaloneItems
       .filter(item => {
@@ -631,7 +633,7 @@ export const getShoeItems = async (req, res) => {
 
     // Combine standalone items and group items
     let allItems = [...validStandaloneItems, ...groupItems];
-    
+
     // Filter by warehouse for non-admin users OR admins viewing a specific store
     if (shouldFilterByWarehouse && userWarehouse) {
       allItems = allItems.filter(item => {
@@ -640,7 +642,7 @@ export const getShoeItems = async (req, res) => {
         return itemBelongsToWarehouse(warehouseStocks, userWarehouse);
       });
     }
-    
+
     // Apply search filter if search term is provided
     const searchTerm = req.query.search || req.query.searchTerm || "";
     if (searchTerm && searchTerm.trim()) {
@@ -651,19 +653,19 @@ export const getShoeItems = async (req, res) => {
         return itemName.includes(searchLower) || sku.includes(searchLower);
       });
     }
-    
+
     // Sort by creation date (newest first)
     allItems.sort((a, b) => {
       const dateA = new Date(a.createdAt || 0);
       const dateB = new Date(b.createdAt || 0);
       return dateB - dateA;
     });
-    
+
     // Apply pagination to combined results
     const totalItems = allItems.length;
     const totalPages = Math.ceil(totalItems / limit);
     const paginatedItems = allItems.slice(skip, skip + limit);
-    
+
     // Return paginated response
     return res.json({
       items: paginatedItems,
@@ -695,18 +697,18 @@ export const getShoeItemById = async (req, res) => {
     if (standaloneItem) {
       return res.json({ ...standaloneItem.toObject(), isFromGroup: false });
     }
-    
+
     // If not found, check if it's an item from a group
     const ItemGroup = (await import("../model/ItemGroup.js")).default;
     const itemGroups = await ItemGroup.find({ isActive: { $ne: false } });
-    
+
     for (const group of itemGroups) {
       if (group.items && Array.isArray(group.items)) {
         const groupItem = group.items.find(item => {
           const itemIdStr = item._id?.toString() || `${group._id}_${group.items.indexOf(item)}`;
           return itemIdStr === itemId || item._id?.toString() === itemId;
         });
-        
+
         if (groupItem) {
           // Convert group item to standalone item format
           const standaloneItem = {
@@ -747,7 +749,7 @@ export const getShoeItemById = async (req, res) => {
         }
       }
     }
-    
+
     // Item not found in standalone items or groups
     return res.status(404).json({ message: "Item not found." });
   } catch (error) {
@@ -834,11 +836,11 @@ export const updateShoeItem = async (req, res) => {
       const oldStocksStr = JSON.stringify(oldStocks);
       const newStocksStr = JSON.stringify(newStocks);
       const isStockUpdate = oldStocksStr !== newStocksStr;
-      
+
       changeType = isStockUpdate ? "STOCK_UPDATE" : "UPDATE";
       details = generateChangeDetails(oldItem.toObject(), updatedItem.toObject(), changeType);
     }
-    
+
     // Log history for item update
     try {
       const historyEntry = {
@@ -904,7 +906,7 @@ export const deleteShoeItem = async (req, res) => {
 
     // First, try to find as standalone item
     const standaloneItem = await ShoeItem.findById(itemId);
-    
+
     if (standaloneItem) {
       console.log(`✅ Found as standalone item`);
       // It's a standalone item - delete it
@@ -932,7 +934,7 @@ export const deleteShoeItem = async (req, res) => {
     // If not found as standalone, check if it's from a group
     const ItemGroup = (await import("../model/ItemGroup.js")).default;
     let itemGroups = [];
-    
+
     if (itemGroupId) {
       // If itemGroupId is provided, check that specific group
       const groupIdStr = itemGroupId.toString();
@@ -966,23 +968,23 @@ export const deleteShoeItem = async (req, res) => {
       // Find the item in the group's items array
       let itemIndex = -1;
       let foundItem = null;
-      
+
       for (let i = 0; i < group.items.length; i++) {
         const item = group.items[i];
         const groupItemId = item._id?.toString() || item.id?.toString();
         const groupIdStr = group._id?.toString();
         const compositeId = `${groupIdStr}_${i}`;
         const itemIdStr = itemId.toString();
-        
+
         console.log(`  Item ${i}: groupItemId="${groupItemId}", compositeId="${compositeId}", searching for="${itemIdStr}"`);
-        
+
         // Try multiple matching strategies
         // 1. Direct ID match
         const matchesById = groupItemId && (itemIdStr === groupItemId || groupItemId === itemIdStr);
-        
+
         // 2. Composite ID exact match
         const matchesByComposite = itemIdStr === compositeId || compositeId === itemIdStr;
-        
+
         // 3. Check if itemId is a composite ID pattern (groupId_index)
         let matchesCompositePattern = false;
         if (itemIdStr.includes('_')) {
@@ -990,26 +992,26 @@ export const deleteShoeItem = async (req, res) => {
           const lastPart = parts[parts.length - 1];
           const groupPart = parts.slice(0, -1).join('_');
           // Check if the group part matches and index matches
-          if ((groupPart === groupIdStr || groupIdStr.includes(groupPart) || groupPart.includes(groupIdStr)) && 
-              (lastPart === String(i) || lastPart === `0${i}`)) {
+          if ((groupPart === groupIdStr || groupIdStr.includes(groupPart) || groupPart.includes(groupIdStr)) &&
+            (lastPart === String(i) || lastPart === `0${i}`)) {
             matchesCompositePattern = true;
           }
         }
-        
+
         // 4. Check if itemId starts with groupId and ends with index
         const matchesCompositeStartEnd = itemIdStr.startsWith(groupIdStr) && itemIdStr.endsWith(`_${i}`);
-        
+
         // 5. Partial match for cases where IDs might be truncated or partial
         const matchesByPartial = groupItemId && (
-          itemIdStr.includes(groupItemId) || 
+          itemIdStr.includes(groupItemId) ||
           groupItemId.includes(itemIdStr) ||
           itemIdStr.startsWith(groupItemId) ||
           groupItemId.startsWith(itemIdStr)
         );
-        
+
         // 6. Match by first part of composite ID (in case full ID is truncated)
         const itemIdStartsWithGroupId = itemIdStr.startsWith(groupIdStr.substring(0, 8)) || groupIdStr.startsWith(itemIdStr.substring(0, 8));
-        
+
         if (matchesById || matchesByComposite || matchesCompositePattern || matchesCompositeStartEnd || matchesByPartial || itemIdStartsWithGroupId) {
           console.log(`  ✅ MATCH FOUND! matchesById=${matchesById}, matchesByComposite=${matchesByComposite}, matchesCompositePattern=${matchesCompositePattern}, matchesCompositeStartEnd=${matchesCompositeStartEnd}, matchesByPartial=${matchesByPartial}, itemIdStartsWithGroupId=${itemIdStartsWithGroupId}`);
           itemIndex = i;
@@ -1022,9 +1024,9 @@ export const deleteShoeItem = async (req, res) => {
         // Found the item in this group
         deletedItem = foundItem;
         groupName = group.name;
-        
+
         console.log(`✅ Found item in group "${groupName}" at index ${itemIndex}`);
-        
+
         // Log history before deletion
         try {
           await ItemHistory.create({
@@ -1044,7 +1046,7 @@ export const deleteShoeItem = async (req, res) => {
         group.items.splice(itemIndex, 1);
         group.markModified('items');
         await group.save();
-        
+
         foundInGroup = true;
         console.log(`✅ Successfully deleted item from group "${groupName}"`);
         break;
@@ -1055,10 +1057,10 @@ export const deleteShoeItem = async (req, res) => {
 
     if (foundInGroup) {
       console.log(`=== DELETE SUCCESS ===\n`);
-      return res.json({ 
-        message: "Item deleted successfully from group.", 
+      return res.json({
+        message: "Item deleted successfully from group.",
         groupName: groupName,
-        isFromGroup: true 
+        isFromGroup: true
       });
     }
 
@@ -1082,8 +1084,8 @@ export const getShoeItemHistory = async (req, res) => {
 
     // Fetch history for standalone item (where itemGroupId is null or the itemId matches)
     // This includes history when item was standalone, and also when it was moved to/from groups
-    const query = { 
-      itemId: itemId.toString() 
+    const query = {
+      itemId: itemId.toString()
     };
 
     console.log(`Fetching history for itemId: ${itemId}, query:`, query);
@@ -1098,4 +1100,3 @@ export const getShoeItemHistory = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch item history." });
   }
 };
-
